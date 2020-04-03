@@ -1,6 +1,6 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 
-use crate::cmds::gen_subc;
+use crate::gen_subc;
 use crate::cmds::init;
 
 #[derive(Debug)]
@@ -15,19 +15,12 @@ pub enum Command {
     Error(String),
 }
 
-pub fn get_args() -> Command {
-
+pub fn get_args() -> (usize, Command) {
     let cli_commands = gen_subc::ClapCommands {
-        commands: vec![Box::new(
-                      init::Init {clap_cmd: SubCommand::with_name("init")},
-                      )],
+        commands: vec![Box::new(init::Init {
+            clap_cmd: SubCommand::with_name("init"),
+        })],
     };
-    // TODO: add a trait for the gen_subcommand method
-    // for item in subcs, do:
-    // import module of that name
-    // call gen_subcommand with string passed and returning Command
-    // create command_vector
-    // pass into get_args()
 
     let matches = App::new("git-lab")
         .setting(AppSettings::ColoredHelp)
@@ -46,8 +39,24 @@ pub fn get_args() -> Command {
         .subcommands(cli_commands.generate())
         .get_matches();
 
-    println!("Matches = {:#?}", matches);
-    Command::Purge
+    // Get vebosity
+    let verbosity: usize = match matches.occurrences_of("v") {
+        0 => 0,
+        1 => 1,
+        2 => 2,
+        3 => 3,
+        _ => 3,
+    };
+
+    // Dipatch handler for passed command
+    match matches.subcommand() {
+        ("init", Some(sub_m)) => {}  // clone was used
+        _ => {
+            println!("{}", matches.usage());
+        } // Either no subcommand or one not tested for...
+    }
+    // println!("Matches = {:#?}", matches);
+    (verbosity, Command::Purge)
 
     // if let Some(o) = matches.value_of("add") {
     //     Command::Add(String::from(o))

@@ -2,18 +2,18 @@
 // mod config;
 
 mod cmds {
-    pub mod gen_subc;
     pub mod init;
     pub mod merge_request;
 }
 
+mod gen_subc;
 mod args;
 
 // use config::Config;
 
 fn main() {
-    let command = args::get_args();
-    // let config = Config::defaults();
+    let (verbosity, command) = args::get_args();
+    // let sq = Config::defaults();
 
     // match command {
     //     Command::Add(s) => {
