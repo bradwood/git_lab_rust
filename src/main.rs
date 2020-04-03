@@ -9,11 +9,10 @@ mod cmds {
 
 mod args;
 
-use args::get_args;
 // use config::Config;
 
 fn main() {
-    let command = get_args();
+    let command = args::get_args();
     // let config = Config::defaults();
 
     // match command {
