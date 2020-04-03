@@ -3,6 +3,16 @@ name = "git-lab"
 version = "0.1.0"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
+description = "A git custom command for interacting with a GitLab server"
+readme = "README.md"
+repository = "https://gitlab.com/bradwood/git-lab-rust"
+keywords = ["git", "Gitlab", "cli"]
+categories = ["development-tools", "command-line-utilities"]
+license = "MIT0"
+
+[badges]
+gitlab = { repository =  "bradwood/git-lab-rust" }
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
