@@ -1,3 +1,23 @@
+//! This is a cli tool that adds the `lab` command to `git` to enable interaction with a GitLab server.
+//!
+//! # Features
+//!
+//! The tool is designed to work as a custom command to the vanilla `git` cli command. Current
+//! feature include:
+//! * `init` -- initialite credentials aganst a remote GitLab server
+//! * `merge-request` -- create and manipulate merge requests
+//!
+//! `git-lab` by default stores it's config using standard `git config` machinery.
+//!
+//! # Installation
+//!
+//! TBC
+//!
+//! # Contributions
+//!
+//! Merge requests are welcome.
+//!
+//! TOOO: Add more on build, test, and release machinery later.
 // mod config;
 mod subcommand;
 
@@ -26,7 +46,7 @@ fn main() {
         .setting(clap::AppSettings::ColoredHelp)
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
-        .about("GitLab cli")
+        .about("A git custom command for interacting with a GitLab server")
         .arg(
             clap::Arg::with_name("verbose")
                 .short("v")
@@ -53,6 +73,8 @@ fn main() {
     println!("Matches = {:#?}", matches);
 
     // Dispatch handler for passed command
+    // TODO: Make this more idomatic if possble, without needing to refer to specific entries in
+    // the vector which is ugly
     match matches.subcommand() {
         ("init", Some(sub_m)) => {cli_commands.commands[0].run()}
         ("merge-request", Some(sub_m)) => {cli_commands.commands[1].run()}
@@ -61,7 +83,7 @@ fn main() {
         }
     }
 
-    // let sq = Config::defaults();
+    // let config = Config::defaults();
 
     // match command {
     //     Command::Add(s) => {
