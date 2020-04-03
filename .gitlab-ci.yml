@@ -1,0 +1,19 @@
+image: bradqwood/rust-build-docker:latest
+
+stages:
+  - lint
+  - test
+  # - build
+
+lint:
+  stage: lint
+  script:
+    -  cargo clippy
+
+test:
+  stage: test
+  script:
+    - cargo test
+    - kcov --exclude-pattern=/.cargo,/usr/lib --verify target/cov target/debug/git-lab*
+    - COVERAGE=$(grep -Po 'covered":.*?[^\\]"' target/cov/index.js | grep "[0-9]*\.[0-9]" -o)
+    - echo "Coverage:" $COVERAGE
