@@ -1,5 +1,3 @@
-[![Build Status](https://gitlab.com/bradwood/git-lab-rust/badges/master/build.svg)](https://gitlab.com/bradwood/git-lab-rust/commits/master)
-
 # git-lab
 
 This is a cli tool that adds the `lab` command to `git` to enable interaction with a GitLab server.
@@ -23,4 +21,4 @@ Merge requests are welcome.
 
 TOOO: Add more on build, test, and release machinery later.
 
-License: MIT0
+License: MIT
