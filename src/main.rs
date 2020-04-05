@@ -18,6 +18,9 @@
 //! Merge requests are welcome.
 //!
 //! TOOO: Add more on build, test, and release machinery later.
+
+#[macro_use]
+extern crate log;
 mod config;
 mod subcommand;
 mod utils;
@@ -27,11 +30,13 @@ mod cmds {
     pub mod merge_request;
 }
 
+use anyhow::Result;
+
 use config::Config;
 
 use crate::cmds::{init, merge_request};
 
-fn main() {
+fn main() -> Result<()> {
     let cli_commands = subcommand::ClapCommands {
         commands: vec![
             Box::new(init::Init {
@@ -44,10 +49,10 @@ fn main() {
     };
 
     let matches = clap::App::new("git-lab")
-        .setting(clap::AppSettings::ColoredHelp)
+        .setting(clap::AppSettings::VersionlessSubcommands)
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
-        .about("A git custom command for interacting with a GitLab server")
+        .about("A custom git command for interacting with a GitLab server")
         .arg(
             clap::Arg::with_name("verbose")
                 .short("v")
@@ -58,24 +63,21 @@ fn main() {
         .subcommands(cli_commands.generate())
         .get_matches();
 
-    // Get vebosity
-    let verbosity: usize = match matches.occurrences_of("v") {
-        0 => 0,
-        1 => 1,
-        2 => 2,
-        3 => 3, _ => 3, };
+    loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
 
-    println!("Matches = {:#?}", matches);
+    trace!("Matches = {:?}", matches);
 
     let config = Config::defaults();
 
-    println!("Config = {:#?}", config);
+    trace!("Config = {:?}", config);
 
     // Dispatch handler for passed command
-    // TODO: Make this idomatic don't refer to specific entries in the vector which is ugly
+    // TODO: Make this idomatic - don't refer to specific entries in the vector which is ugly
+    // TODO: Make this idomatic - don't clone
     match matches.subcommand() {
-        ("init", Some(sub_m)) => cli_commands.commands[0].run(),
-        ("merge-request", Some(sub_m)) => cli_commands.commands[1].run(),
+        ("init", Some(sub_args)) => cli_commands.commands[0].run(config?, sub_args.clone()),
+        ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config?, sub_args.clone()),
         _ => println!("{}", matches.usage()),
     }
+    Ok(())
 }

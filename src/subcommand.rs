@@ -1,9 +1,12 @@
+use crate::config;
+
 /// All subcommands need to implement this interface.
 pub trait SubCommand {
     /// Generates the cli-config that Clap requires for the subcommand.
     fn gen_clap_command(&self) -> clap::App;
+
     /// Runs the body of the subcommand.
-    fn run(&self);
+    fn run(&self, config: config::Config, args: clap::ArgMatches);
 }
 
 /// A struct which holds a vector of heap-allocated `Box`es of trait objects all of which must

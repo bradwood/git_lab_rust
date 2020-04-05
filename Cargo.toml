@@ -3,7 +3,7 @@ name = "git-lab"
 version = "0.1.0"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
-description = "A git custom command for interacting with a GitLab server"
+description = "A custom git command for interacting with a GitLab server"
 readme = "README.md"
 repository = "https://gitlab.com/bradwood/git-lab-rust"
 keywords = ["git", "Gitlab", "cli"]
@@ -16,10 +16,13 @@ license = "MIT"
 [dependencies]
 clap = "2.33.0"
 git2 = "0.13"
-# dirs = "2"
+log = "0.4"
+loggerv = "0.7"
+anyhow = "1.0"
+# thiserror = "1.0"
 
 # [dev-dependencies]
 assert_cmd = "0.12"
 assert_fs = "1.0"
 predicates = "1.0"
-# rstest = "0.6"
+rstest = "0.6"
