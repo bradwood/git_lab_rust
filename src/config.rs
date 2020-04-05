@@ -1,32 +1,13 @@
 use git2::Repository;
 use std::env;
-use std::path::{Path, PathBuf};
+
+use crate::utils::find_git_root;
 
 #[derive(Debug)]
 pub struct Config {
     apitoken: Option<String>,
     host: Option<String>,
     tls: Option<bool>,
-}
-
-const DOTGIT: &str = ".git";
-
-fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
-    let mut path: PathBuf = starting_directory.into();
-    let dotgit = Path::new(DOTGIT);
-
-    loop {
-        path.push(dotgit);
-
-        if path.is_dir() {
-            break Some(path);
-        }
-
-        // remove DOTGIT && remove parent
-        if !(path.pop() && path.pop()) {
-            break None;
-        }
-    }
 }
 
 impl Config {

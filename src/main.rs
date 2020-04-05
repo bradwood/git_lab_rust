@@ -20,6 +20,7 @@
 //! TOOO: Add more on build, test, and release machinery later.
 mod config;
 mod subcommand;
+mod utils;
 
 mod cmds {
     pub mod init;
@@ -62,9 +63,7 @@ fn main() {
         0 => 0,
         1 => 1,
         2 => 2,
-        3 => 3,
-        _ => 3,
-    };
+        3 => 3, _ => 3, };
 
     println!("Matches = {:#?}", matches);
 
