@@ -15,9 +15,11 @@ license = "MIT"
 
 [dependencies]
 clap = "2.33.0"
+git2 = "0.13"
 # dirs = "2"
 
 # [dev-dependencies]
-# assert_cmd = "0.12"
-# predicates = "1.0"
+assert_cmd = "0.12"
+assert_fs = "1.0"
+predicates = "1.0"
 # rstest = "0.6"

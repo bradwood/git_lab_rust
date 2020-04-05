@@ -13,10 +13,9 @@ pub struct ClapCommands {
 }
 
 impl ClapCommands {
-    /// Gnerates a vector of Clap::Apps that can be passed into Clap's `.subcommands()` method in
+    /// Generates a vector of `clap::Apps` that can be passed into clap's `.subcommands()` method in
     /// order to generate the full CLI.
     pub fn generate(&self) -> Vec<clap::App> {
-
         let mut v: Vec<clap::App> = Vec::new();
 
         for command in self.commands.iter() {

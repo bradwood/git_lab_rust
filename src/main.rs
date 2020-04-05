@@ -18,7 +18,7 @@
 //! Merge requests are welcome.
 //!
 //! TOOO: Add more on build, test, and release machinery later.
-// mod config;
+mod config;
 mod subcommand;
 
 mod cmds {
@@ -26,7 +26,7 @@ mod cmds {
     pub mod merge_request;
 }
 
-// use config::Config;
+use config::Config;
 
 use crate::cmds::{init, merge_request};
 
@@ -66,39 +66,17 @@ fn main() {
         _ => 3,
     };
 
-    // let config = Config::defaults();
-
-    // (verbosity, Command::Purge)
-
     println!("Matches = {:#?}", matches);
 
+    let config = Config::defaults();
+
+    println!("Config = {:#?}", config);
+
     // Dispatch handler for passed command
-    // TODO: Make this more idomatic if possble, without needing to refer to specific entries in
-    // the vector which is ugly
+    // TODO: Make this idomatic don't refer to specific entries in the vector which is ugly
     match matches.subcommand() {
-        ("init", Some(sub_m)) => {cli_commands.commands[0].run()}
-        ("merge-request", Some(sub_m)) => {cli_commands.commands[1].run()}
-        _ => {
-            println!("{}", matches.usage());
-        }
+        ("init", Some(sub_m)) => cli_commands.commands[0].run(),
+        ("merge-request", Some(sub_m)) => cli_commands.commands[1].run(),
+        _ => println!("{}", matches.usage()),
     }
-
-    // let config = Config::defaults();
-
-    // match command {
-    //     Command::Add(s) => {
-    //         println!("Add: {}", s);
-    //         add(config.file, s)
-    //     }
-    //     Command::Increase(x) => println!("Increase: {}", x),
-    //     Command::Decrease(x) => println!("Decrease: {}", x),
-    //     Command::Purge => println!("Purge"),
-    //     Command::Stats => println!("Stats"),
-    //     Command::Complete => println!("Complete"),
-    //     Command::Directory(v) => println!("Directory: {:?}", v),
-    //     Command::Error(e) => {
-    //         println!("Error: {}", e);
-    //         std::process::exit(1)
-    //     }
-    // }
 }
