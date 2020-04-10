@@ -24,17 +24,53 @@ pub struct Config {
     tls: Option<bool>,
 }
 
-fn update_configs(config: &mut Config, git_config: &GitConfig) {
+/// Open System, XDG and Global multi-level config or return empty config.
+fn maybe_open_multilevel_config() -> GitConfig {
+    match GitConfig::open_default() {
+        Ok(mlc) => {
+            trace!("Opened multi-level default config");
+            mlc
+        }
+        Err(_) => {
+            warn!("Didn't find default git config, ignoring");
+            GitConfig::new().unwrap()
+        }
+    }
+}
+
+/// Open local ($REPODIR/.git/config) or return empty config.
+fn maybe_open_local_config() -> GitConfig {
+    // See https://stackoverflow.com/q/61119366/743861
+    (|| {
+        let cwd = env::current_dir().ok()?;
+        trace!("Got current directory");
+        let git_path = find_git_root(&cwd)?;
+        trace!("Found local or upstream git repo");
+        let repo = Repository::open(&git_path).ok()?;
+        trace!("Opened git repo");
+        let config = repo.config().ok()?;
+        trace!("Opened git repo's local config");
+        config.open_level(Local).ok()
+    })().unwrap_or_else(|| GitConfig::new().unwrap())
+}
+
+/// Update this app's Config object from a git single-level config object
+fn update_config_from_git(config: &mut Config, git_config: &GitConfig) {
     for entry in &git_config.entries(Some("gitlab")).unwrap() {
         let entry = entry.unwrap();
         match entry.name().unwrap() {
             "gitlab.token" => config.token = Some(entry.value().unwrap().to_string()),
             "gitlab.host" => config.host = Some(entry.value().unwrap().to_string()),
-            "gitlab.tls" => config.tls = Some(entry.value().unwrap().to_uppercase() == "TRUE"),
+            "gitlab.tls" => config.tls = Some(
+                entry.value().unwrap().to_uppercase() == "TRUE" ||
+                entry.value().unwrap().to_uppercase() == "YES" ||
+                entry.value().unwrap().to_uppercase() == "ON" ||
+                entry.value().unwrap().to_uppercase() == "1"
+                ),
             _ => (),
         };
         trace!(
-            "L: {:?} : {} => {}",
+            "{:?} : {} <= {}",
             config,
             entry.name().unwrap(),
             entry.value().unwrap()
@@ -42,85 +78,73 @@ fn update_configs(config: &mut Config, git_config: &GitConfig) {
     }
 }
 
-impl Config {
-    pub fn defaults() -> Config {
-        let mut config = Config {
-            token: None,
-            host: None,
-            tls: None,
+/// Update this app's Config object from environment variables if found
+fn update_config_from_env<V>(config: &mut Config, vars: V)
+where
+    V: Iterator<Item = (String, String)> // use a trait bound to aid testing
+
+{
+    let gitlab_vars = vars.filter(|(k, _)| k.starts_with("GITLAB_"));
+    for (key, value) in gitlab_vars {
+        if key == "GITLAB_TOKEN" { config.token = Some(value); continue };
+        if key == "GITLAB_HOST" { config.host = Some(value); continue };
+        if key == "GITLAB_TLS" {
+            config.tls = Some(
+                value.to_uppercase() == "TRUE" ||
+                value.to_uppercase() == "YES" ||
+                value.to_uppercase() == "ON" ||
+                value.to_uppercase() == "1"
+                );
+            continue
         };
+    }
+}
 
-        // open multi-level default config object which includes system, global and XDG configs,
-        // but not local. Needed to provide sane behaviour outside of a local git repo.
-        let default_config = match GitConfig::open_default() {
-            Ok(x) => {
-                trace!("Opened multi-level default config");
-                x
-            }
-            Err(_) => {
-                warn!("Didn't find default git config, ignoring");
-                GitConfig::new().unwrap()
-            }
-        };
-
-        // search each config, from the top down, for each config item and add to the struct.
-        static LEVELS: [ConfigLevel; 3] = [System, XDG, Global];
-        for level in LEVELS.iter() {
-            let level_config = match default_config.open_level(*level) {
-                Ok(x) => {
-                    trace!("Opened config at level {:?}", level);
-                    x
-                }
-                Err(_) => {
-                    trace!( "Didn't find config at level {:?}, proceeding without", level);
-                    GitConfig::new().unwrap()
-                }
-            };
-
-            update_configs(&mut config, &level_config);
+/// Get a specific single level of git config fro a multi-level config
+fn get_level_config(multi_level: &GitConfig, level: ConfigLevel) -> GitConfig {
+    match multi_level.open_level(level) {
+        Ok(c) => {
+            trace!("Opened config at level {:?}", level);
+            c
         }
+        Err(_) => {
+            trace!( "Didn't find config at level {:?}, proceeding without", level);
+            GitConfig::new().unwrap()
+        }
+    }
 
-        // open local config object if a git repo is found. If none is found just return an empty
-        // GitConfig
-        let local = match env::current_dir() {
-            Err(_) => GitConfig::new().unwrap(),
-            Ok(cwd) => {
-                trace!("Got current directory");
-                match find_git_root(&cwd) {
-                    None => GitConfig::new().unwrap(),
-                    Some(git_path) => {
-                        trace!("Found local or upstream git repo");
-                        match Repository::open(&git_path) {
-                            Err(_) => GitConfig::new().unwrap(),
-                            Ok(repo) => {
-                                trace!("Opened git repo");
-                                match repo.config() {
-                                    Err(_) => GitConfig::new().unwrap(),
-                                    Ok(config) => {
-                                        trace!("Opened git repo's local config");
-                                        config.open_level(Local).unwrap()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
+}
 
-        // // Search this global repo and override any earlier assignments
-        update_configs(&mut config, &local);
+impl Config {
+    /// This function reads the configs from the various GitLab sections in the various git config
+    /// files and loads them into the Config struct.
+    pub fn defaults() -> Config {
+        let mut config = Config { token: None, host: None, tls: None };
 
-        // then search environment variables for overrides and add them if needed.
-        if let Ok(v) = env::var("GITLAB_TOKEN") {
-            config.token = Some(v)
-        };
-        if let Ok(v) = env::var("GITLAB_HOST") {
-            config.host = Some(v)
-        };
-        if let Ok(v) = env::var("GITLAB_TLS") {
-            config.tls = Some(v.to_uppercase() == "TRUE")
-        };
+        // Open multi-level default config object which includes system, global and XDG configs,
+        // but not local. Needed to provide sane behaviour outside of a local git repo.
+        let default_config = maybe_open_multilevel_config();
+
+        // Update the config from each level of the multi-levl-config
+        static LEVELS: [ConfigLevel; 3] = [System, XDG, Global];
+        #[allow(clippy::suspicious_map)] //using count() below to force iterator consumption
+        LEVELS.iter()
+            .map(|l|
+                update_config_from_git(&mut config,
+                    &get_level_config(&default_config, *l)
+                    )
+                )
+            .count();
+
+
+        // Open local config object if a repo is found else return an empty GitConfig
+        let local = maybe_open_local_config();
+
+        // Override any earlier assignments in the struct from the local git config
+        update_config_from_git(&mut config, &local);
+
+        // Then update the config from environment variable overrides
+        update_config_from_env(&mut config, env::vars());
 
         config
     }
@@ -129,48 +153,223 @@ impl Config {
 #[cfg(test)]
 mod config_unit_tests {
     use super::*;
+    use rstest::*;
+    use assert_fs::prelude::*;
+
+    // -- maybe_open_local_config --
 
     #[test]
-    fn test_no_current_directory() {
+    fn test_open_local_config_no_cwd() {
         let temp = assert_fs::TempDir::new().unwrap();
         env::set_current_dir(temp.path()).unwrap();
         temp.close().unwrap(); //delete current directory
 
-        let conf = Config::defaults();
+        let no_cwd = maybe_open_local_config();
 
-        assert_eq!(conf.token, None);
-        assert_eq!(conf.host, None);
-        assert_eq!(conf.tls, None);
+        assert!(no_cwd.get_string("gitlab.host").is_err());
+        assert!(no_cwd.get_string("gitlab.token").is_err());
+        assert!(no_cwd.get_bool("gitlab.tls").is_err());
     }
 
     #[test]
-    fn test_no_git_repo() {
+    fn test_open_local_config_no_repo() {
         let temp = assert_fs::TempDir::new().unwrap();
         env::set_current_dir(temp.path()).unwrap();
 
-        let conf = Config::defaults();
+        let no_local_config = maybe_open_local_config();
 
-        assert_eq!(conf.token, None);
-        assert_eq!(conf.host, None);
-        assert_eq!(conf.tls, None);
+        assert!(no_local_config.get_string("gitlab.host").is_err());
+        assert!(no_local_config.get_string("gitlab.token").is_err());
+        assert!(no_local_config.get_bool("gitlab.tls").is_err());
 
-        temp.close().unwrap();
+        temp.close().unwrap()
     }
 
     #[test]
-    fn test_empty_git_config() {
+    fn test_open_local_config_no_config() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        Repository::init(temp.path()).unwrap();
+        std::fs::remove_file(".git/config").unwrap();
+
+        let empty_local_config = maybe_open_local_config();
+
+        assert!(empty_local_config.get_string("gitlab.host").is_err());
+        assert!(empty_local_config.get_string("gitlab.token").is_err());
+        assert!(empty_local_config.get_bool("gitlab.tls").is_err());
+
+        temp.close().unwrap()
+    }
+
+    #[test]
+    fn test_open_local_config_empty_repo() {
         let temp = assert_fs::TempDir::new().unwrap();
         env::set_current_dir(temp.path()).unwrap();
         Repository::init(temp.path()).unwrap();
 
-        let conf = Config::defaults();
+        let empty_local_config = maybe_open_local_config();
 
-        assert_eq!(conf.token, None);
-        assert_eq!(conf.host, None);
-        assert_eq!(conf.tls, None);
+        assert!(empty_local_config.get_string("gitlab.host").is_err());
+        assert!(empty_local_config.get_string("gitlab.token").is_err());
+        assert!(empty_local_config.get_bool("gitlab.tls").is_err());
 
-        temp.close().unwrap();
+        temp.close().unwrap()
     }
+
+    #[test]
+    fn test_open_local_config_nonempty_repo() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.set_str("gitlab.token", "testtoken").unwrap();
+        git_config.set_str("gitlab.host", "some.host.name").unwrap();
+        git_config.set_bool("gitlab.tls", true).unwrap();
+
+        let nonempty_local_config = maybe_open_local_config();
+
+        assert_eq!(nonempty_local_config.get_string("gitlab.token").unwrap(), "testtoken");
+        assert_eq!(nonempty_local_config.get_string("gitlab.host").unwrap(), "some.host.name");
+        assert!(nonempty_local_config.get_bool("gitlab.tls").unwrap());
+
+        temp.close().unwrap()
+    }
+
+    // -- update_config_from_git --
+
+    #[test]
+    fn test_update_config_from_empty_git() {
+        let git_config = GitConfig::new().unwrap();
+        let mut config = Config { token: None, host: None, tls: None };
+
+        update_config_from_git(&mut config, &git_config);
+
+        assert!(config.token.is_none());
+        assert!(config.host.is_none());
+        assert!(config.tls.is_none());
+    }
+
+    #[test]
+    fn test_update_config_from_git() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.set_str("gitlab.token", "testtoken").unwrap();
+        git_config.set_str("gitlab.host", "some.host.name").unwrap();
+        git_config.set_bool("gitlab.tls", true).unwrap();
+        let mut config = Config { token: None, host: None, tls: None };
+
+        update_config_from_git(&mut config, &git_config);
+
+        assert_eq!(config.token.unwrap(), "testtoken");
+        assert_eq!(config.host.unwrap(), "some.host.name");
+        assert!(config.tls.unwrap());
+
+        temp.close().unwrap()
+    }
+
+    #[rstest(
+        switch,
+        case("True"),
+        case("TrUe"),
+        case("yes"),
+        case("YEs"),
+        case("1"),
+        case("on"),
+    )]
+    fn test_update_config_from_git_boolean_true_variants(switch: &str) {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.set_str("gitlab.token", "testtoken").unwrap();
+        git_config.set_str("gitlab.host", "some.host.name").unwrap();
+        git_config.set_str("gitlab.tls",switch).unwrap();
+        let mut config = Config { token: None, host: None, tls: None };
+
+        update_config_from_git(&mut config, &git_config);
+
+        assert_eq!(config.token.unwrap(), "testtoken");
+        assert_eq!(config.host.unwrap(), "some.host.name");
+        assert!(config.tls.unwrap());
+
+        temp.close().unwrap()
+    }
+
+    #[rstest(
+        switch,
+        case("no"),
+        case("False"),
+        case("FaLse"),
+        case("oFF"),
+        case("0"),
+        case("NO"),
+        case("rubbish"),
+        case("un dkf sdf sd"),
+        case("x"),
+    )]
+    fn test_update_config_from_git_boolean_false_variants(switch: &str) {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.set_str("gitlab.token", "testtoken").unwrap();
+        git_config.set_str("gitlab.host", "some.host.name").unwrap();
+        git_config.set_str("gitlab.tls",switch).unwrap();
+        let mut config = Config { token: None, host: None, tls: None };
+
+        update_config_from_git(&mut config, &git_config);
+
+        assert_eq!(config.token.unwrap(), "testtoken");
+        assert_eq!(config.host.unwrap(), "some.host.name");
+        assert!(!config.tls.unwrap());
+
+        temp.close().unwrap()
+    }
+
+    // -- get_level_config --
+
+    #[test]
+    fn test_get_level_config() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.open_level(System).unwrap().set_str("gitlab.token", "systemtoken").unwrap();
+        git_config.open_level(Global).unwrap().set_str("gitlab.token", "globaltoken").unwrap();
+
+        let single_level = get_level_config(&git_config, System);
+        assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "systemtoken");
+        let single_level = get_level_config(&git_config, Global);
+        assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "globaltoken");
+
+        temp.close().unwrap()
+    }
+
+    // -- update_config_from_env --
+
+    #[test]
+    fn test_update_config_from_env() {
+        let mut conf = Config { token: Some("token".to_string()), host: None, tls: None };
+
+        use std::collections::HashMap;
+        let mut env = HashMap::new();
+
+        env.insert("GITLAB_TOKEN".to_string(), "env_token".to_string());
+        env.insert("GITLAB_HOST".to_string(), "env_host".to_string());
+        env.insert("GITLAB_TLS".to_string(), "yeS".to_string());
+
+        update_config_from_env(&mut conf, env.into_iter());
+
+        assert_eq!(conf.token.unwrap(), "env_token");
+        assert_eq!(conf.host.unwrap(), "env_host");
+        assert!(conf.tls.unwrap());
+    }
+
+    // -- Config::defaults() --
 
     #[test]
     fn test_read_local_config() {
