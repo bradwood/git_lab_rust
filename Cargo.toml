@@ -14,15 +14,21 @@ license = "MIT"
 # gitlab = { repository = "bradwood/git-lab-rust" }
 
 [dependencies]
-clap = "2.33.0"
 git2 = "0.13"
 log = "0.4"
 loggerv = "0.7"
 anyhow = "1.0"
+dialoguer = "0.5"
 # thiserror = "1.0"
 
-# [dev-dependencies]
+[dependencies.clap]
+version = "2.33.0"
+default-features = true
+features = ["wrap_help", "suggestions", "color"]
+
+[dev-dependencies]
 assert_cmd = "0.12"
 assert_fs = "1.0"
 predicates = "1.0"
 rstest = "0.6"
+

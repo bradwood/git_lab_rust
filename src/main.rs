@@ -53,6 +53,7 @@ fn main() -> Result<()> {
 
     let matches = clap::App::new("git-lab")
         .setting(clap::AppSettings::VersionlessSubcommands)
+        .setting(clap::AppSettings::ColoredHelp)
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("A custom git command for interacting with a GitLab server")
@@ -78,8 +79,8 @@ fn main() -> Result<()> {
     // TODO: Make this idomatic - don't refer to specific entries in the vector which is ugly
     // TODO: Make this idomatic - don't clone
     match matches.subcommand() {
-        ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone()),
-        ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone()),
+        ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone())?,
+        ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
         _ => println!("{}", matches.usage()),
     }
     Ok(())

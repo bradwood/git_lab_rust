@@ -4,6 +4,7 @@ use git2::ConfigLevel::{Global, Local, System, XDG};
 use git2::Repository;
 use std::env;
 use std::path::PathBuf;
+use anyhow::{anyhow, Context, Result};
 
 use crate::utils::find_git_root;
 
@@ -20,11 +21,26 @@ use crate::utils::find_git_root;
 /// Override priority increases from top to bottom.
 ///
 #[derive(Debug)]
+#[derive(PartialEq)]
+pub enum GitConfigSaveableLevel {
+    Repo,
+    User,
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum UserGitConfigLevel {
+    XDG,
+    Global,
+}
+
+#[derive(Debug)]
 pub struct Config {
-    token: Option<String>,
-    host: Option<String>,
-    tls: Option<bool>,
-    repo_path: Option<PathBuf>,
+    pub token: Option<String>,
+    pub host: Option<String>,
+    pub tls: Option<bool>,
+    pub repo_path: Option<PathBuf>, //convenience param, not saved with ::save()
+    pub user_config_type: Option<UserGitConfigLevel>, //convenience param, not saved with ::save()
 }
 
 /// Open System, XDG and Global multi-level config or return empty config.
@@ -52,9 +68,7 @@ fn maybe_get_local_repo() -> Option<PathBuf> {
 fn maybe_open_local_config() -> GitConfig {
     // See https://stackoverflow.com/q/61119366/743861
     (|| {
-        let cwd = env::current_dir().ok()?;
-        trace!("got current directory");
-        let git_path = find_git_root(&cwd)?;
+        let git_path = maybe_get_local_repo()?;
         trace!("found local or upstream git repo");
         let repo = Repository::open(&git_path).ok()?;
         trace!("opened git repo");
@@ -125,15 +139,46 @@ fn get_level_config(multi_level: &GitConfig, level: ConfigLevel) -> GitConfig {
 
 }
 
+/// Return which type of user config is being used. Is it Global ($HOME/.gitconfig)
+/// or XDG ($HOME/.config/git/config)? If none can be found, it will force Global.
+fn get_user_config_type(multi_level_config: &GitConfig) -> Option<UserGitConfigLevel> {
+    if multi_level_config.open_level(XDG).is_err() {
+        Some(UserGitConfigLevel::Global)
+    } else {
+        Some(UserGitConfigLevel::XDG)
+    }
+}
+
+/// Write config data to a git config
+fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
+
+    if config.host.is_some() {
+        save_config.set_str("gitlab.host", config.host.as_ref().unwrap())
+            .context("Failed to save gitlab.host to git config.")?;
+    }
+
+    if config.token.is_some() {
+        save_config.set_str("gitlab.token", config.token.as_ref().unwrap())
+            .context("Failed to save gitlab.token to git config.")?;
+    }
+
+    if config.tls.is_some() {
+        save_config.set_bool("gitlab.tls", config.tls.unwrap())
+            .context("Failed to save gitlab.tls to git config.")?;
+    }
+
+    Ok(())
+}
+
 impl Config {
 
     /// Create an empty config object.
     fn new() -> Config {
-        Config { token: None, host: None, tls: None, repo_path: None }
+        Config { token: None, host: None, tls: None, repo_path: None , user_config_type: None}
     }
 
-    /// This function reads the configs from the various GitLab sections in the various git config
-    /// files and loads them into the Config struct.
+    /// Reads the configs from the various GitLab sections in the various git config files and
+    /// loads them into the Config struct.
     pub fn defaults() -> Config {
         let mut config = Self::new();
 
@@ -143,6 +188,10 @@ impl Config {
         // Open multi-level default config object which includes system, global and XDG configs,
         // but not local. Needed to provide sane behaviour outside of a local git repo.
         let default_config = maybe_open_multilevel_config();
+
+        // Is the user using a Global ($HOME/.gitconfig) or XDG ($HOME/.config/git/config) style of
+        // user level config?
+        config.user_config_type = get_user_config_type(&default_config);
 
         // Update the config from each level of the multi-level-config
         static LEVELS: [ConfigLevel; 3] = [System, XDG, Global];
@@ -167,6 +216,37 @@ impl Config {
 
         config
     }
+
+    /// Saves the config to the appropriate config file. NOTE it will silently apply XDG
+    /// instead of Global if config.user_config_type is set to XDG, and vice versa.
+    pub fn save(&self, level:GitConfigSaveableLevel) -> Result<()>{
+        match level {
+            GitConfigSaveableLevel::Repo => {
+                let mut save_config = maybe_open_local_config();
+                self.repo_path.as_ref().ok_or_else(|| anyhow!("Cannot save to local git repo config if it can't be found."))?;
+                write_config(&mut save_config, self)?;
+            },
+            GitConfigSaveableLevel::User => {
+                match self.user_config_type.as_ref().unwrap() {
+                    UserGitConfigLevel::Global => {
+                        let mut save_config = GitConfig::open_default()
+                            .unwrap()
+                            .open_level(Global)
+                            .unwrap();
+                        write_config(&mut save_config, self)?;
+                    },
+                    UserGitConfigLevel::XDG => {
+                        let mut save_config = GitConfig::open_default()
+                            .unwrap()
+                            .open_level(XDG)
+                            .unwrap();
+                        write_config(&mut save_config, self)?;
+                    },
+                }
+            },
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -189,7 +269,7 @@ mod config_unit_tests {
     }
 
     #[test]
-    fn test_get_local_repo_no_repo() {
+    fn test_get_local_repo_empty() {
         let temp = assert_fs::TempDir::new().unwrap();
         env::set_current_dir(temp.path()).unwrap();
 
@@ -385,6 +465,33 @@ mod config_unit_tests {
         temp.close().unwrap()
     }
 
+    // -- get_user_config_type --
+
+    #[test]
+    fn test_get_user_config_type() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.open_level(System).unwrap().set_str("gitlab.token", "systemtoken").unwrap();
+        git_config.open_level(Global).unwrap().set_str("gitlab.token", "globaltoken").unwrap();
+
+        let mut config_type = get_user_config_type(&git_config);
+
+        assert_eq!(config_type.unwrap(), UserGitConfigLevel::Global);
+
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+        git_config.open_level(XDG).unwrap().set_str("gitlab.token", "xdgtoken").unwrap();
+
+        config_type = get_user_config_type(&git_config);
+
+        assert_eq!(config_type, Some(UserGitConfigLevel::XDG));
+
+        temp.close().unwrap()
+    }
+
     // -- get_level_config --
 
     #[test]
@@ -425,6 +532,179 @@ mod config_unit_tests {
         assert_eq!(conf.token.unwrap(), "env_token");
         assert_eq!(conf.host.unwrap(), "env_host");
         assert!(conf.tls.unwrap());
+    }
+
+    // -- test_write_config --
+
+    #[test]
+    fn test_write_config() -> Result<()>{
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+
+        let conf = Config {
+            token: Some("brad".to_string()),
+            host: Some("bradhost".to_string()),
+            tls: Some(false),
+            repo_path: None,
+            user_config_type: None
+        };
+
+        write_config(&mut git_config, &conf)?;
+
+        assert_eq!(git_config.get_string("gitlab.token").unwrap(), "brad");
+        assert_eq!(git_config.get_string("gitlab.host").unwrap(), "bradhost");
+        assert!(!git_config.get_bool("gitlab.tls").unwrap());
+
+        temp.close().unwrap();
+        Ok(())
+    }
+
+    #[test]
+    #[should_panic(expected = "Failed to save gitlab.host to git config.")]
+    fn test_write_config_force_write_error() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+
+        let conf = Config {
+            token: Some("brad".to_string()),
+            host: Some("bradhost".to_string()),
+            tls: Some(false),
+            repo_path: None,
+            user_config_type: None
+        };
+
+        temp.close().unwrap(); // delete directory out from under app
+
+        write_config(&mut git_config, &conf).unwrap();
+
+    }
+
+    #[test]
+    fn test_write_config_missing_value() -> Result<()>{
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+
+        let conf = Config {
+            token: Some("brad".to_string()),
+            host: None,
+            tls: Some(false),
+            repo_path: None,
+            user_config_type: None
+        };
+
+        write_config(&mut git_config, &conf)?;
+
+        assert_eq!(git_config.get_string("gitlab.token").unwrap(), "brad");
+        assert!(git_config.get_string("gitlab.host").is_err());
+        assert!(!git_config.get_bool("gitlab.tls").unwrap());
+
+        temp.close().unwrap();
+        Ok(())
+    }
+
+    // -- Config::save() --
+
+    #[test]
+    fn test_save_repo_config() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+
+        // create an empty config with only repo_path and user_config_type = Global
+        // the below 5 asserts confirm this.
+        let mut conf = Config::defaults();
+        assert!(conf.token.is_none());
+        assert!(conf.host.is_none());
+        assert!(conf.tls.is_none());
+        assert!(conf.repo_path.as_ref().unwrap().to_str().unwrap().to_string().starts_with("/tmp/")); //TempDir uses /tmp
+        assert_eq!(conf.user_config_type, Some(UserGitConfigLevel::Global));
+
+        // now we change up the conf a bit but not all attributes, so we can test the None case.
+        conf.host = Some("testhost".to_string());
+        conf.token = Some("test-token".to_string());
+        conf.tls = None;
+
+        // println!("{:#?}", &conf);
+        // panic!();
+
+        // now lets try to save to the Local repo config
+        conf.save(GitConfigSaveableLevel::Repo).unwrap();
+
+        // now we read it back in to assert
+        let mut single_level = get_level_config(&git_config, Local);
+        assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost");
+        assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token");
+
+        // lets check Global to make sure it's not there
+        single_level = get_level_config(&git_config, Global);
+        assert!(single_level.get_entry("gitlab.token").is_err()); // it should error out looking this up
+
+        temp.close().unwrap()
+    }
+
+    #[test]
+    #[ignore]
+    fn test_save_user_config() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        env::set_current_dir(temp.path()).unwrap();
+        let repo = Repository::init(temp.path()).unwrap();
+        let mut git_config = repo.config().unwrap();
+        git_config.add_file(temp.child("system").path(), System, true).unwrap();
+        git_config.add_file(temp.child("global").path(), Global, true).unwrap();
+        git_config.add_file(temp.child("xdg").path(), XDG, true).unwrap();
+
+        // create an empty config with only repo_path and user_config_type = Global
+        // the below 5 asserts confirm this.
+        let mut conf = Config::defaults();
+        assert!(conf.token.is_none());
+        assert!(conf.host.is_none());
+        assert!(conf.tls.is_none());
+        assert!(conf.repo_path.as_ref().unwrap().to_str().unwrap().to_string().starts_with("/tmp/")); //TempDir uses /tmp
+        assert_eq!(conf.user_config_type, Some(UserGitConfigLevel::Global));
+
+        // now we change up the conf a bit but not all attributes, so we can test the None case.
+        conf.host = Some("testhost-sgc".to_string());
+        conf.token = Some("test-token-sgc".to_string());
+        conf.tls = None;
+
+        // println!("{:#?}", &conf);
+        // panic!();
+
+        // TODO: create integration test for this case
+        // now lets try to save to the Global repo config
+        // CAN'T stub this out. It writes to the _real_ user's config. To be handled later in
+        // integration tests
+        // conf.save(GitConfigSaveableLevel::User).unwrap();
+
+        // now we read it back in to assert
+        let mut single_level = get_level_config(&git_config, Global);
+        assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost-sgc");
+        assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token-sgc");
+
+        // lets check Local to make sure it's not there
+        single_level = get_level_config(&git_config, Local);
+        assert!(single_level.get_entry("gitlab.token").is_err()); // it should error out looking this up
+
+        temp.close().unwrap()
     }
 
     // -- Config::defaults() --

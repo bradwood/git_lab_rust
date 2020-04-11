@@ -1,5 +1,6 @@
 use crate::config;
 use crate::subcommand;
+use anyhow::Result;
 
 pub struct MergeRequest<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
@@ -18,9 +19,10 @@ impl subcommand::SubCommand for MergeRequest<'_> {
             )
     }
 
-    fn run(&self, config: config::Config, args: clap::ArgMatches) {
+    fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
         trace!("Starting run()");
         trace!("Config: {:?}", config);
         trace!("Args: {:?}", args);
+        Ok(())
     }
 }

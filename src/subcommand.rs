@@ -1,4 +1,5 @@
 use crate::config;
+use anyhow::Result;
 
 /// All subcommands need to implement this interface.
 pub trait SubCommand {
@@ -6,7 +7,7 @@ pub trait SubCommand {
     fn gen_clap_command(&self) -> clap::App;
 
     /// Runs the body of the subcommand.
-    fn run(&self, config: config::Config, args: clap::ArgMatches);
+    fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()>;
 }
 
 /// A struct which holds a vector of heap-allocated `Box`es of trait objects all of which must
