@@ -43,11 +43,9 @@ fn maybe_open_multilevel_config() -> GitConfig {
 
 /// Return the path to the local git repo if found.
 fn maybe_get_local_repo() -> Option<PathBuf> {
-    (|| {
-        let cwd = env::current_dir().ok()?;
-        trace!("got current directory");
-        find_git_root(&cwd)
-    })()
+    let cwd = env::current_dir().ok()?;
+    trace!("got current directory");
+    find_git_root(&cwd)
 }
 
 /// Open local ($REPODIR/.git/config) or return empty config.
@@ -128,6 +126,8 @@ fn get_level_config(multi_level: &GitConfig, level: ConfigLevel) -> GitConfig {
 }
 
 impl Config {
+
+    /// Create an empty config object.
     fn new() -> Config {
         Config { token: None, host: None, tls: None, repo_path: None }
     }
@@ -136,6 +136,9 @@ impl Config {
     /// files and loads them into the Config struct.
     pub fn defaults() -> Config {
         let mut config = Self::new();
+
+        // Get a local repo if one is there
+        config.repo_path = maybe_get_local_repo();
 
         // Open multi-level default config object which includes system, global and XDG configs,
         // but not local. Needed to provide sane behaviour outside of a local git repo.
@@ -161,8 +164,6 @@ impl Config {
 
         // Then update the config from environment variable overrides
         update_config_from_env(&mut config, env::vars());
-
-        config.repo_path = maybe_get_local_repo();
 
         config
     }
