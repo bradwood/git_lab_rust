@@ -16,22 +16,42 @@ impl subcommand::SubCommand for Init<'_> {
     fn gen_clap_command(&self) -> clap::App {
         // TODO: figure out a way to get the borrow checker to work without `clone()`
         let c = self.clap_cmd.clone();
-        c.about("Initialises server credentials")
+        c.about("Initialises server credentials interactively")
             .setting(clap::AppSettings::ColoredHelp)
-            .after_help("TODO: explain about env Vars. This is the after help.")
+            .after_help("This command initialises the various configuration data needed to talk to \
+a GitLab server API. It does this interactively, by prompting the user for the data required. The \
+configuration data is saved using the standard git-config(1) mechanics and conventions (including \
+precedence), at the user- or repo-specific level (see `--user`). As this is just standard git \
+config, one can simply edit the appropriate git config file directly or invoke git-config(1) as \
+illustrated in the examples below:
+
+    git config --local --add gitlab.host my.gitlab.host.com
+    git config --local --add gitlab.token PERSONAL_ACCESS_TOKEN
+    git config --global --add gitlab.tls true
+
+Initialisation via `git lab init` is not mandatory. Users preferring to set configuration \
+parameters by environment variables can do so. The variables that can be set are shown below. Note \
+that setting these will override the data set in any git config file.
+
+    GITLAB_HOST
+    GITLAB_TOKEN
+    GITLAB_TLS
+")
+
             .arg(
                 clap::Arg::with_name("user")
                     .short("u")
                     .long("user")
                     .long_help(
-"This swtich will cause the user-level rather than repo-level configuration to be updated. Note \
-that this defaults to true when the command is invoked outside the directory hierarchy of a local \
-git repo. If a local repo is found, its local repo-specific config will be updated unless this \
-flag is passed.")
+"This swtich will cause the user-level (either $HOME/.gitconfig or $XDG_CONFIG_HOME/git/config) \
+rather than repo-level ($GITDIR/.git/config) configuration to be updated. Note that this defaults \
+to true when the command is invoked outside the directory hierarchy of a local git repo. If a local \
+repo is found, its local repo-specific config will be updated unless this flag is passed. If you \
+wish to manage your configuration across a combination of git config files (e.g., system, global \
+and local) then you must directly edit the relevant files or invoke git-config(1) directly.")
                     .help("Set credentials at user scope"),
             )
     }
-
 
     fn run(&self, mut config: config::Config, args: clap::ArgMatches) -> Result<()> {
         trace!("Starting run()");
@@ -39,9 +59,7 @@ flag is passed.")
         trace!("Args: {:?}", args);
         trace!("--user : {:?}", args.is_present("user"));
 
-
-        // for each entry in config object, prompt for the item
-        // setting defaults from the config object, if present
+        // Get config from user
         config.host = Input::<String>::new()
             .with_prompt("GitLab host")
             .default(config.host.unwrap_or_else(|| "None".to_string()))
@@ -54,15 +72,16 @@ flag is passed.")
             .default(config.tls.unwrap_or(true))
             .interact().ok();
 
-        // default to local config unless --user is passed
-        // default to --user if git_repo cannot be found.
-        let write_user = config.repo_path.is_none() || args.is_present("user");
-        trace!("writing to user config? : {:?}", write_user);
+        //TODO: make sure a user config of one or other type exists, otherwise create one.
 
-        config.save(Repo).context("Could not save to git config")?;
-
-        // FIXME
-
+        // Write to appropriate config file
+        if config.repo_path.is_none() || args.is_present("user") {
+            config.save(User).with_context(|| format!("Could not save to git config: {:?}", User))?;
+            trace!("wrote to User config: {:?}", config.user_config_type.unwrap());
+        } else {
+            config.save(Repo).with_context(|| format!("Could not save to git config: {:?}", Repo))?;
+            trace!("wrote to Repo config: {:?}", config.repo_path.unwrap());
+        }
         Ok(())
     }
 }
