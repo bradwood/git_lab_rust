@@ -9,7 +9,7 @@ mod cli_tests {
 
     #[test]
     fn test_cli_no_args() {
-        let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
+        let mut cmd = Command::cargo_bin("git-lab").unwrap();
         let assert = cmd.assert();
         assert
             .success()

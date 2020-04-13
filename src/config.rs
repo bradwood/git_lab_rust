@@ -8,6 +8,24 @@ use anyhow::{anyhow, Context, Result};
 
 use crate::utils::find_git_root;
 
+/// This enum specifies the two ways in which git config can be saved, either to the User's config
+/// (dotfile) or to the Repo's.
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum GitConfigSaveableLevel {
+    Repo,
+    User,
+}
+
+/// This enum specifies the two types of User-level git config: the XDG form, and the local user
+/// dotfile form (confusingly, known as `Global` in git parlance).
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum UserGitConfigLevel {
+    XDG,
+    Global,
+}
+
 /// This struct holds the config data required to talk to a GitLab server as well as other
 /// configuration data, including the path to the local repo (if any).
 ///
@@ -19,21 +37,6 @@ use crate::utils::find_git_root;
 ///  * The environment variables `GITLAB_HOST`, `GITLAB_TOKEN` and `GITLAB_TLS`
 ///
 /// Override priority increases from top to bottom.
-///
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum GitConfigSaveableLevel {
-    Repo,
-    User,
-}
-
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum UserGitConfigLevel {
-    XDG,
-    Global,
-}
-
 #[derive(Debug)]
 pub struct Config {
     pub token: Option<String>,

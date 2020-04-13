@@ -1,26 +1,37 @@
 image: bradqwood/rust-build-docker:latest
 
-# cache: &global_cache
-#     key: ${CI_COMMIT_REF_SLUG}
-#     paths:
-#       - target/
-#     policy: pull-push
+cache: &global_cache
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - target/
+    policy: pull-push
 
 stages:
   - lint
-  - test
+  - unit test
+  - integration test
 
 lint:
   stage: lint
   script:
     -  cargo clippy
 
-test:
-  stage: test
+unit test:
+  stage: unit test
   script:
     - cargo clean
-    - cargo test -- --test-threads=1
+    - cargo test -- --test-threads=1 --skip cli
     - TARGET=$(find target/debug/deps -name "git_lab-*" -executable -type f -exec stat -c '%Y %n' {} \; | sort -nr | head -1 |cut -f2 -d' ')
     - kcov --exclude-pattern=/.cargo,/usr/lib,/cargo --verify target/cov $TARGET
     - COVERAGE=$(grep -Po 'covered":.*?[^\\]"' target/cov/index.js | grep "[0-9]*\.[0-9]" -o)
     - echo "Coverage:" $COVERAGE
+
+integration test:
+  stage: integration test
+  script:
+    # - cargo clean
+    - cargo test -- --test-threads=1 --skip unit
+    # - TARGET=$(find target/debug/deps -name "git_lab-*" -executable -type f -exec stat -c '%Y %n' {} \; | sort -nr | head -1 |cut -f2 -d' ')
+    # - kcov --exclude-pattern=/.cargo,/usr/lib,/cargo --verify target/cov $TARGET
+    # - COVERAGE=$(grep -Po 'covered":.*?[^\\]"' target/cov/index.js | grep "[0-9]*\.[0-9]" -o)
+    # - echo "Coverage:" $COVERAGE

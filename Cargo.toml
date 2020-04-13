@@ -1,11 +1,12 @@
 [package]
-name = "git-lab"
+name = "git_lab_cli"
 version = "0.1.0"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
 description = "A custom git command for interacting with a GitLab server"
 readme = "README.md"
 repository = "https://gitlab.com/bradwood/git-lab-rust"
+homepage = "https://gitlab.com/bradwood/git-lab-rust"
 keywords = ["git", "Gitlab", "cli"]
 categories = ["development-tools", "command-line-utilities"]
 license = "MIT"
@@ -19,7 +20,6 @@ log = "0.4"
 loggerv = "0.7"
 anyhow = "1.0"
 dialoguer = "0.5"
-# thiserror = "1.0"
 
 [dependencies.clap]
 version = "2.33.0"
@@ -31,4 +31,8 @@ assert_cmd = "0.12"
 assert_fs = "1.0"
 predicates = "1.0"
 rstest = "0.6"
+
+[[bin]]
+name = "git-lab"           # The name of the target.
+path = "src/main.rs"    # The source file of the target.
 
