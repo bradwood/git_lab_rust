@@ -60,7 +60,7 @@ fn maybe_open_multilevel_config() -> GitConfig {
 /// Return the path to the local git repo if found.
 fn maybe_get_local_repo() -> Option<PathBuf> {
     let cwd = env::current_dir().ok()?;
-    trace!("got current directory");
+    trace!("Found current directory");
     find_git_root(&cwd)
 }
 
@@ -180,20 +180,19 @@ impl Config {
     /// Reads the configs from the various GitLab sections in the various git config files and
     /// loads them into the Config struct.
     pub fn defaults() -> Config {
+        trace!( "Creating empty Config object");
         let mut config = Self::new();
 
-        // Get a local repo if one is there
+        trace!( "Get a local repo path if one is there");
         config.repo_path = maybe_get_local_repo();
 
-        // Open multi-level default config object which includes system, global and XDG configs,
-        // but not local. Needed to provide sane behaviour outside of a local git repo.
+        trace!( "Read multi-level git config (which excludes repo's config)");
         let default_config = maybe_open_multilevel_config();
 
-        // Is the user using a Global ($HOME/.gitconfig) or XDG ($HOME/.config/git/config) style of
-        // user level config?
         config.user_config_type = get_user_config_type(&default_config);
+        trace!( "User config file: {:?}", config.user_config_type.as_ref().unwrap());
 
-        // Update the config from each level of the multi-level-config
+        trace!( "Load config object data from System, XDG or Global git configs");
         static LEVELS: [ConfigLevel; 3] = [System, XDG, Global];
         #[allow(clippy::suspicious_map)] //using count() below to force iterator consumption
         LEVELS.iter()
@@ -204,16 +203,16 @@ impl Config {
                 )
             .count();
 
-
-        // Open local config object if a repo is found else return an empty GitConfig
+        trace!( "Open local repo-specific config if one was found");
         let local = maybe_open_local_config();
 
-        // Override any earlier assignments in the struct from the local git config
+        trace!( "Override any previously set config data using Local config, if it was found");
         update_config_from_git(&mut config, &local);
 
-        // Then update the config from environment variable overrides
+        trace!( "Override any previously set config data using enivronment variables, if found");
         update_config_from_env(&mut config, env::vars());
 
+        trace!( "Return config");
         config
     }
 
@@ -643,9 +642,6 @@ mod config_unit_tests {
         conf.token = Some("test-token".to_string());
         conf.tls = None;
 
-        // println!("{:#?}", &conf);
-        // panic!();
-
         // now lets try to save to the Local repo config
         conf.save(GitConfigSaveableLevel::Repo).unwrap();
 
@@ -661,6 +657,7 @@ mod config_unit_tests {
         temp.close().unwrap()
     }
 
+    // TODO: make this test work inside CI, even if it doesn't work nicely sandboxed in dev
     #[test]
     #[ignore]
     fn test_save_user_config() {
@@ -693,7 +690,7 @@ mod config_unit_tests {
         // now lets try to save to the Global repo config
         // CAN'T stub this out. It writes to the _real_ user's config. To be handled later in
         // integration tests
-        // conf.save(GitConfigSaveableLevel::User).unwrap();
+        conf.save(GitConfigSaveableLevel::User).unwrap();
 
         // now we read it back in to assert
         let mut single_level = get_level_config(&git_config, Global);

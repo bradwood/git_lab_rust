@@ -10,11 +10,13 @@ pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
         path.push(dotgit);
 
         if path.is_dir() {
+            trace!("Found git root: {:?}", path.as_path().to_str().unwrap());
             break Some(path);
         }
 
         // remove DOTGIT && remove parent
         if !(path.pop() && path.pop()) {
+            trace!("Did not find git root");
             break None;
         }
     }

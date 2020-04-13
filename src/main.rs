@@ -69,12 +69,17 @@ fn main() -> Result<()> {
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
 
-    trace!("Matches = {:?}", matches);
+    trace!("Starting main()");
+    trace!("Loading arg config");
+    trace!("Parse arguments");
+    trace!("Passed arguments = {:?}", matches);
 
+    trace!("Initialising config from disk");
     let config = Config::defaults();
 
-    trace!("Config = {:?}", config);
+    trace!("Dispatching to subcommand");
 
+    trace!("Config = {:?}", config);
     // Dispatch handler for passed command
     // TODO: Make this idomatic - don't refer to specific entries in the vector which is ugly
     // TODO: Make this idomatic - don't clone
