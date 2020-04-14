@@ -15,11 +15,15 @@
 //!
 //! # Installation
 //!
-//! TBC
+//! For now, this is only available via `cargo` while under development. 
+//!
+//! ```
+//! cargo install git_lab_cli
+//! ```
 //!
 //! # Contributions
 //!
-//! Merge requests are welcome.
+//! Merge requests are welcome. Please raise a merge request on [GitLab](https://gitlab.com/bradwood/git-lab-rust), not GitHub.
 
 #[macro_use]
 extern crate log;
