@@ -72,8 +72,6 @@ and local) then you must directly edit the relevant files or invoke git-config(1
             .default(config.tls.unwrap_or(true))
             .interact().ok();
 
-        //TODO: make sure a user config of one or other type exists, otherwise create one.
-
         // Write to appropriate config file
         if config.repo_path.is_none() || args.is_present("user") {
             config.save(User).with_context(|| format!("Could not save to git config: {:?}", User))?;

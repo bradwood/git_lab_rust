@@ -1,6 +1,6 @@
 [package]
 name = "git_lab_cli"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
 description = "A custom git command for interacting with a GitLab server"
@@ -15,11 +15,11 @@ license = "MIT"
 # gitlab = { repository = "bradwood/git-lab-rust" }
 
 [dependencies]
+anyhow = "1.0"
+dialoguer = "0.5"
 git2 = "0.13"
 log = "0.4"
 loggerv = "0.7"
-anyhow = "1.0"
-dialoguer = "0.5"
 
 [dependencies.clap]
 version = "2.33.0"
@@ -29,6 +29,7 @@ features = ["wrap_help", "suggestions", "color"]
 [dev-dependencies]
 assert_cmd = "0.12"
 assert_fs = "1.0"
+lazy_static = "1.4"
 predicates = "1.0"
 rstest = "0.6"
 
