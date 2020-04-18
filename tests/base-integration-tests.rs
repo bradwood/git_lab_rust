@@ -1,11 +1,7 @@
 #[cfg(test)]
-mod cli_tests {
-    // extern crate assert_cmd;
+mod base_integration_tests {
     use assert_cmd::Command;
-    // extern crate predicates;
     use predicates::prelude::*;
-    // extern crate rstest;
-    // use rstest::*;
 
     #[test]
     fn test_cli_no_args() {

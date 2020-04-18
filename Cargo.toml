@@ -31,6 +31,7 @@ assert_cmd = "0.12"
 assert_fs = "1.0"
 lazy_static = "1.4"
 predicates = "1.0"
+rexpect = "0.3"
 rstest = "0.6"
 
 [[bin]]
