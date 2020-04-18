@@ -249,12 +249,14 @@ impl Config {
 
 #[cfg(test)]
 mod config_unit_tests {
-    use super::*;
-    use rstest::*;
     use assert_fs::prelude::*;
-    use std::sync::Once;
-    use std::path::Path;
     use lazy_static::*;
+    use rstest::*;
+    use std::path::Path;
+    use std::sync::Once;
+    use super::*;
+
+    // TODO figure out a way of importing this from tests/common/mod.rs
 
     // This is a single, static TempDir used to run all tests in.
     lazy_static! {

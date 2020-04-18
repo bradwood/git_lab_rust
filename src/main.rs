@@ -9,7 +9,7 @@
 //!
 //! The tool is designed to work as a custom command to the vanilla `git` cli command. Current
 //! feature include:
-//! * `init` -- initialite credentials aganst a remote GitLab server
+//! * `init` -- initialise credentials aganst a remote GitLab server
 //!
 //! `git-lab` by default stores it's config using standard `git config` machinery.
 //!
@@ -72,9 +72,6 @@ fn main() -> Result<()> {
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
 
-    trace!("Starting main()");
-    trace!("Loading arg config");
-    trace!("Parse arguments");
     trace!("Passed arguments = {:?}", matches);
 
     trace!("Initialising config from disk");
