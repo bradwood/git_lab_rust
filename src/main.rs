@@ -10,6 +10,9 @@
 //! The tool is designed to work as a custom command to the vanilla `git` cli command. Current
 //! feature include:
 //! * `init` -- initialise credentials aganst a remote GitLab server
+//! * `project` -- interact with GitLab projects
+//!     * `project create` -- create project
+//!     * `project attach` -- associate a local repo with a project
 //!
 //! `git-lab` by default stores it's config using standard `git config` machinery.
 //!
@@ -34,13 +37,14 @@ mod utils;
 mod cmds {
     pub mod init;
     pub mod merge_request;
+    pub mod project;
 }
 
 use anyhow::Result;
 
 use config::Config;
 
-use crate::cmds::{init, merge_request};
+use crate::cmds::{init, merge_request, project};
 
 fn main() -> Result<()> {
     let cli_commands = subcommand::ClapCommands {
@@ -51,12 +55,18 @@ fn main() -> Result<()> {
             Box::new(merge_request::MergeRequest {
                 clap_cmd: clap::SubCommand::with_name("merge-request"),
             }),
+            Box::new(project::Project {
+                clap_cmd: clap::SubCommand::with_name("project"),
+            }),
         ],
     };
 
     let matches = clap::App::new("git-lab")
         .setting(clap::AppSettings::VersionlessSubcommands)
         .setting(clap::AppSettings::ColoredHelp)
+        // .setting(clap::AppSettings::ArgRequiredElseHelp)
+        // .setting(clap::AppSettings::ArgsNegateSubcommands)
+        .setting(clap::AppSettings::SubcommandRequiredElseHelp)
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("A custom git command for interacting with a GitLab server")
@@ -72,7 +82,7 @@ fn main() -> Result<()> {
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
 
-    trace!("Passed arguments = {:?}", matches);
+    // trace!("Passed arguments = {:?}", matches);
 
     trace!("Initialising config from disk");
     let config = Config::defaults();
@@ -80,13 +90,12 @@ fn main() -> Result<()> {
     trace!("Dispatching to subcommand");
 
     trace!("Config = {:?}", config);
-    // Dispatch handler for passed command
-    // TODO: Make this idomatic - don't refer to specific entries in the vector which is ugly
-    // TODO: Make this idomatic - don't clone
+
     match matches.subcommand() {
         ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone())?,
         ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
-        _ => println!("{}", matches.usage()),
+        ("project", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
+        _ => (), // clap should catch this before it ever fires
     }
     Ok(())
 }
