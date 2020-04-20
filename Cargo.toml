@@ -18,6 +18,7 @@ license = "MIT"
 anyhow = "1.0"
 dialoguer = "0.5"
 git2 = "0.13"
+gitlab = "0.1209"
 log = "0.4"
 loggerv = "0.7"
 

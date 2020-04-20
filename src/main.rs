@@ -33,6 +33,7 @@ extern crate log;
 mod config;
 mod subcommand;
 mod utils;
+mod gitlab;
 
 mod cmds {
     pub mod init;

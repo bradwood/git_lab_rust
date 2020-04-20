@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 const DOTGIT: &str = ".git";
 
+/// Find a git repo in the current directory or any one above it.
 pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
     let mut path: PathBuf = starting_directory.into();
     let dotgit = Path::new(DOTGIT);

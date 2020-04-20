@@ -1,6 +1,10 @@
+mod create;
+
 use crate::config;
 use crate::subcommand;
+use crate::cmds::project::create::create_project;
 use anyhow::Result;
+
 
 /// This implements the `project` command. It proves the ability to create, query and manipulate
 /// projects in GitLab.
@@ -260,15 +264,11 @@ If invoked outside the context of a local repo, the command will fail.",
     }
 
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
-        trace!("Starting run()");
-        trace!("Config: {:#?}", config);
-        trace!("Args: {:#?}", args);
-
-        // match args.subcommand() {
-        //     ("create", Some(create_args)) => create_project(config, create_args)?,
-        //     ("create", Some(create_args)) => create_project(config, create_args)?,
-        //     _ => Err(())
-        // }
+        match args.subcommand() {
+            ("create", Some(create_args)) => create_project(config, create_args.clone())?,
+            // ("create", Some(create_args)) => create_project(config, create_args)?,
+            _ => ()
+        }
 
         Ok(())
     }
