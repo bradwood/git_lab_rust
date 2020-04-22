@@ -24,9 +24,12 @@ pub fn create_project_cmd(
     // .unwrap();
 
     gitlab.create_project(
-        args.value_of("name").unwrap(),
-        Some(args.value_of("path").unwrap()),
-        Some(params.build().unwrap()),
+        // args.value_of("name").unwrap(),
+        "testproj",
+        Some("the_path"),
+        None
+        // args.value_of("path"),
+        // Some(params.build().unwrap()),
     )?;
     trace!("created project: {}", args.value_of("name").unwrap());
     Ok(())

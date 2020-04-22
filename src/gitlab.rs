@@ -52,14 +52,16 @@ impl IfGitLab for GitLab {
                 .with_context(|| {
                     format!(
                         "Failed to make insecure (http) connection to {}\n
-                    Try running `git lab init` to ensure all connection parameters are correct.",
+Try running `git lab init` to ensure all connection parameters are correct.",
                         host
                     )
                 })?,
-            _ => TPGitLabBuilder::new(host, token).build().with_context(|| {
+            _ => TPGitLabBuilder::new(host, token)
+                .build()
+                .with_context(|| {
                 format!(
                     "Failed to make secure (https) connection to {}\n
-                    Try running `git lab init` to ensure all connection parameters are correct.",
+Try running `git lab init` to ensure all connection parameters are correct.",
                     host
                 )
             })?,
@@ -73,6 +75,8 @@ impl IfGitLab for GitLab {
         path: Option<P>,
         params: Option<CreateProjectParams>,
     ) -> Result<Project> {
-        self.gl.create_project(name, path, params).context("Failed to create a project.")
+        self.gl
+            .create_project(name, path, params)
+            .context("Failed to create project.")
     }
 }
