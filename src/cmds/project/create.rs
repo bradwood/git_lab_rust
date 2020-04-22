@@ -1,13 +1,16 @@
 use anyhow::Result;
 
 use crate::config;
-use crate::gitlab::{gen_gitlab, CreateProjectParams, GitLabShim};
+use crate::gitlab::{CreateProjectParams, IfGitLab};
 
-pub fn create_project(config: config::Config, args: clap::ArgMatches) -> Result<()> {
+pub fn create_project_cmd(
+    config: config::Config,
+    args: clap::ArgMatches,
+    gitlab: impl IfGitLab,
+) -> Result<()> {
     trace!("Config: {:?}", config);
     trace!("Args: {:?}", args);
 
-    let gitlab = gen_gitlab(config)?;
     let mut params = &mut CreateProjectParams::builder();
 
     if args.is_present("description") {
@@ -16,6 +19,7 @@ pub fn create_project(config: config::Config, args: clap::ArgMatches) -> Result<
     }
 
     // .description("Splendid project")
+    // // set up XDG and Global configs
     // .build()
     // .unwrap();
 
@@ -27,3 +31,6 @@ pub fn create_project(config: config::Config, args: clap::ArgMatches) -> Result<
     trace!("created project: {}", args.value_of("name").unwrap());
     Ok(())
 }
+
+
+// TODO: add test for create object that passes in a mock gitlab object
