@@ -69,6 +69,7 @@ Try running `git lab init` to ensure all connection parameters are correct.",
         Ok(Box::new(GitLab { gl }))
     }
 
+    // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
     fn create_project<N: AsRef<str>, P: AsRef<str>>(
         &self,
         name: N,
@@ -76,7 +77,7 @@ Try running `git lab init` to ensure all connection parameters are correct.",
         params: Option<CreateProjectParams>,
     ) -> Result<Project> {
         self.gl
-            .create_project(name, path, params)
-            .context("Failed to create project.")
+            .create_project(&name, path, params)
+            .context("Failed to create project - check for name or path clashes on the server")
     }
 }

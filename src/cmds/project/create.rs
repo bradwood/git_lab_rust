@@ -23,12 +23,13 @@ pub fn create_project_cmd(
     // .build()
     // .unwrap();
 
-    gitlab.create_project(
+    let project = gitlab.create_project(
         args.value_of("name").unwrap(),
         args.value_of("path"),
         Some(params.build().unwrap()),
     )?;
-    trace!("created project: {}", args.value_of("name").unwrap());
+    println!("Project id: {}", project.id);
+    println!("Project URL: {}", project.web_url);
     Ok(())
 }
 
