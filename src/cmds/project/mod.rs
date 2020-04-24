@@ -265,7 +265,7 @@ If invoked outside the context of a local repo, the command will fail.",
             )
     }
 
-    // WILL NOT BE TESTED
+    // How to test?? FIXME
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
 
         let gitlab = *gitlab::GitLab::new(&config)?;

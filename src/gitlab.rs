@@ -1,16 +1,19 @@
-//! This module inplements a shim over the 3rd party GitLab API.
+//! This module inplements a thin shim over the 3rd party GitLab API. As a result we don't
+//! unit-test the shim code, and therefore try to keep as much logic out of this as possible, in
+//! order to keep the shim as thin as possible.
 //!
 //! Where possible it will just re-export types from the 3rd party library when nothing special
 //! needs to be abstracted. However, to aid in mocking/testing and where some abstraction is
 //! needed, the methods here will fulfil that function.
 use anyhow::{Context, Result};
 
-// re-export these 3rd party objects for use outside this module
 pub use gitlab::{CreateProjectParams, Project};
 
-// privately use these 3rd party objects within this module
 use gitlab::Gitlab as TPGitLab;
 use gitlab::GitlabBuilder as TPGitLabBuilder;
+
+// use mockall::*;
+// use mockall::predicate::*;
 
 use crate::config::Config;
 
@@ -20,6 +23,7 @@ pub struct GitLab {
 }
 
 /// Defines the methods that need to be implemented by the GitLab wrapper/shim
+// #[automock]
 pub trait IfGitLab {
     /// Create a connected instance of GitLab
     fn new(config: &Config) -> Result<Box<Self>>; // Use a Box as Self is an unknown size and must go on the heap
@@ -56,9 +60,7 @@ Try running `git lab init` to ensure all connection parameters are correct.",
                         host
                     )
                 })?,
-            _ => TPGitLabBuilder::new(host, token)
-                .build()
-                .with_context(|| {
+            _ => TPGitLabBuilder::new(host, token).build().with_context(|| {
                 format!(
                     "Failed to make secure (https) connection to {}\n
 Try running `git lab init` to ensure all connection parameters are correct.",
@@ -69,15 +71,12 @@ Try running `git lab init` to ensure all connection parameters are correct.",
         Ok(Box::new(GitLab { gl }))
     }
 
-    // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
     fn create_project<N: AsRef<str>, P: AsRef<str>>(
         &self,
         name: N,
         path: Option<P>,
         params: Option<CreateProjectParams>,
     ) -> Result<Project> {
-        self.gl
-            .create_project(&name, path, params)
-            .context("Failed to create project - check for name or path clashes on the server")
+        Ok(self.gl.create_project(&name, path, params)?)
     }
 }

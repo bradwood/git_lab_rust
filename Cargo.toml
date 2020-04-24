@@ -34,6 +34,7 @@ lazy_static = "1.4"
 predicates = "1.0"
 rexpect = "0.3"
 rstest = "0.6"
+mockall = "0.7.0"
 
 [[bin]]
 name = "git-lab"           # The name of the target.

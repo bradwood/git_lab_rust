@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::config;
 use crate::gitlab::{CreateProjectParams, IfGitLab};
@@ -23,15 +23,42 @@ pub fn create_project_cmd(
     // .build()
     // .unwrap();
 
+    // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
     let project = gitlab.create_project(
         args.value_of("name").unwrap(),
         args.value_of("path"),
         Some(params.build().unwrap()),
-    )?;
+    ).context("Failed to create project - check for name or path clashes on the server")?;
+
     println!("Project id: {}", project.id);
     println!("Project URL: {}", project.web_url);
     Ok(())
 }
 
+// #[cfg(test)]
+// mod project_create_unit_tests {
 
-// TODO: add test for create object that passes in a mock gitlab object
+//     use crate::gitlab::Project;
+//     // use mock_it::Mock;
+//     use super::*;
+
+//     struct GitLabMock {
+//     }
+
+//     impl IfGitLab for GitLabMock {
+
+//         fn create_project<N: AsRef<str>, P: AsRef<str>>(
+//             &self,
+//             name: N,
+//             path: Option<P>,
+//             params: Option<CreateProjectParams>,
+//         ) -> Result<Project> {
+//             Ok(Project {
+//                 tid: 123,
+//                 name: name.to_str()
+//             })
+//         }
+
+//     }
+
+// }
