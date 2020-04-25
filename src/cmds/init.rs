@@ -75,10 +75,10 @@ and local) then you must directly edit the relevant files or invoke git-config(1
         // Write to appropriate config file
         if config.repo_path.is_none() || args.is_present("user") {
             config.save(User).with_context(|| format!("Could not save to git config: {:?}", User))?;
-            trace!("wrote to User config: {:?}", config.user_config_type.unwrap());
+            println!("Updated user {:?} config", config.user_config_type.unwrap());
         } else {
             config.save(Repo).with_context(|| format!("Could not save to git config: {:?}", Repo))?;
-            trace!("wrote to Repo config: {:?}", config.repo_path.unwrap());
+            println!("Updated repo config {:?}", config.repo_path.unwrap());
         }
         Ok(())
     }
