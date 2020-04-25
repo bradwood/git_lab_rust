@@ -12,8 +12,8 @@ pub use gitlab::{CreateProjectParams, Project};
 use gitlab::Gitlab as TPGitLab;
 use gitlab::GitlabBuilder as TPGitLabBuilder;
 
-// use mockall::*;
-// use mockall::predicate::*;
+// #[cfg(test)]
+// use mockall::{automock, predicate::*};
 
 use crate::config::Config;
 
@@ -23,10 +23,10 @@ pub struct GitLab {
 }
 
 /// Defines the methods that need to be implemented by the GitLab wrapper/shim
-// #[automock]
+// #[cfg_attr(test, automock)]
 pub trait IfGitLab {
     /// Create a connected instance of GitLab
-    fn new(config: &Config) -> Result<Box<Self>>; // Use a Box as Self is an unknown size and must go on the heap
+    fn new(config: &Config) -> Result<Box<Self>>;
 
     /// Shim over 3rd party create_project() method
     fn create_project<N: AsRef<str>, P: AsRef<str>>(

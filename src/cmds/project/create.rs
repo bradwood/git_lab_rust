@@ -35,30 +35,8 @@ pub fn create_project_cmd(
     Ok(())
 }
 
-// #[cfg(test)]
-// mod project_create_unit_tests {
+#[cfg(test)]
+mod project_create_unit_tests {
 
-//     use crate::gitlab::Project;
-//     // use mock_it::Mock;
-//     use super::*;
 
-//     struct GitLabMock {
-//     }
-
-//     impl IfGitLab for GitLabMock {
-
-//         fn create_project<N: AsRef<str>, P: AsRef<str>>(
-//             &self,
-//             name: N,
-//             path: Option<P>,
-//             params: Option<CreateProjectParams>,
-//         ) -> Result<Project> {
-//             Ok(Project {
-//                 tid: 123,
-//                 name: name.to_str()
-//             })
-//         }
-
-//     }
-
-// }
+}
