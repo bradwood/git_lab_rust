@@ -12,9 +12,6 @@ pub use gitlab::{CreateProjectParams, Project};
 use gitlab::Gitlab as TPGitLab;
 use gitlab::GitlabBuilder as TPGitLabBuilder;
 
-// #[cfg(test)]
-// use mockall::{automock, predicate::*};
-
 use crate::config::Config;
 
 /// Holds the GitLab wrapper that isolates the 3rd party GitLab lib
@@ -22,11 +19,12 @@ pub struct GitLab {
     gl: TPGitLab,
 }
 
-/// Defines the methods that need to be implemented by the GitLab wrapper/shim
-// #[cfg_attr(test, automock)]
-pub trait IfGitLab {
+pub trait IfGitLabNew {
     /// Create a connected instance of GitLab
     fn new(config: &Config) -> Result<Box<Self>>;
+}
+
+pub trait IfGitLabCreateProject {
 
     /// Shim over 3rd party create_project() method
     fn create_project<N: AsRef<str>, P: AsRef<str>>(
@@ -37,7 +35,7 @@ pub trait IfGitLab {
     ) -> Result<Project>;
 }
 
-impl IfGitLab for GitLab {
+impl IfGitLabNew for GitLab {
     /// Return a connected gitlab object
     fn new(config: &Config) -> Result<Box<GitLab>> {
         let host = config
@@ -70,7 +68,9 @@ Try running `git lab init` to ensure all connection parameters are correct.",
         };
         Ok(Box::new(GitLab { gl }))
     }
+}
 
+impl IfGitLabCreateProject for GitLab {
     fn create_project<N: AsRef<str>, P: AsRef<str>>(
         &self,
         name: N,

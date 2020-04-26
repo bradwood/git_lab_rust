@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::config;
 use crate::gitlab;
-use crate::gitlab::IfGitLab;
+use crate::gitlab::IfGitLabNew;
 use crate::subcommand;
 
 
@@ -46,7 +46,7 @@ git-config(1) machinery to associate a GitLab project to a local repo. Subsequen
 invoked in a project context will then use the attached project's identifier when they are invoked.\
 \n
 If neither the project id nor name is passed, this command will attempt to infer which project to \
-attach to by checking if a git remote is configured at the the GitLab host. If one it, it will \
+attach to by checking if a git remote is configured at the the GitLab host. If one is, it will \
 attempt to attach to it.\
 
 \n
@@ -265,13 +265,16 @@ If invoked outside the context of a local repo, the command will fail.",
             )
     }
 
-    // How to test?? FIXME
+    // How to test?? FIXME Use a mock over IfGitLabNew??
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
+
+        trace!("Config: {:?}", config);
+        trace!("Args: {:?}", args);
 
         let gitlab = *gitlab::GitLab::new(&config)?;
 
         match args.subcommand() {
-            ("create", Some(create_args)) => create::create_project_cmd(config, create_args.clone(), gitlab)?,
+            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), gitlab)?,
             _ => ()
         }
 
