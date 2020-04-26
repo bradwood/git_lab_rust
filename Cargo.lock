@@ -365,12 +365,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
-name = "downcast"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb454f0228b18c7f4c3b0ebbee346ed9c52e7443b0999cd543ff3571205701d"
-
-[[package]]
 name = "dtoa"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -469,12 +463,6 @@ name = "foreign-types-shared"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
-
-[[package]]
-name = "fragile"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69a039c3498dc930fe810151a34ba0c1c70b02b8625035592e74432f678591f2"
 
 [[package]]
 name = "fuchsia-cprng"
@@ -578,6 +566,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "assert_fs",
+ "chrono",
  "clap",
  "dialoguer",
  "git2",
@@ -585,7 +574,6 @@ dependencies = [
  "lazy_static",
  "log",
  "loggerv",
- "mockall",
  "predicates",
  "rexpect",
  "rstest",
@@ -1018,33 +1006,6 @@ dependencies = [
  "net2",
  "winapi 0.2.8",
  "ws2_32-sys",
-]
-
-[[package]]
-name = "mockall"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48c9eefc7768ee7a28a09d64e40203d57ad20af8525b7428d5f2f55d8c621984"
-dependencies = [
- "cfg-if",
- "downcast",
- "fragile",
- "lazy_static",
- "mockall_derive",
- "predicates",
- "predicates-tree",
-]
-
-[[package]]
-name = "mockall_derive"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "447326d4e6d99ea272b6e5599cbbfc1e3407c23a856ccf1eb9427ad73267376f"
-dependencies = [
- "cfg-if",
- "proc-macro2 1.0.10",
- "quote 1.0.3",
- "syn 1.0.18",
 ]
 
 [[package]]
