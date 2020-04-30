@@ -28,6 +28,12 @@ unit-test:
 int-test:
 	cargo test -- --test-threads=1 --skip unit
 
+all-test:
+	cargo test -- --test-threads=1
+
+test TEST="":
+	cargo test {{TEST}} -- --test-threads=1
+	
 # generate coverage report and percentage
 cov:
 	#!/usr/bin/env bash
