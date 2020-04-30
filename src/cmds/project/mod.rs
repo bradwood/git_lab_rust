@@ -66,7 +66,6 @@ If invoked outside the context of a local repo, the command will fail.",
                     )
                     .arg(
                         clap::Arg::with_name("path")
-                            .visible_alias("slug")
                             .long("path")
                             .help("Project path/slug")
                             .takes_value(true)
@@ -269,7 +268,7 @@ If invoked outside the context of a local repo, the command will fail.",
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
 
         trace!("Config: {:?}", config);
-        trace!("Args: {:?}", args);
+        debug!("Args: {:#?}", args);
 
         let gitlab = *gitlab::GitLab::new(&config)?;
 

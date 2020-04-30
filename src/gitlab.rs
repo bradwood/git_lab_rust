@@ -25,7 +25,6 @@ pub trait IfGitLabNew {
 }
 
 pub trait IfGitLabCreateProject {
-
     /// Shim over 3rd party create_project() method
     fn create_project<N: AsRef<str>, P: AsRef<str>>(
         &self,
@@ -36,7 +35,7 @@ pub trait IfGitLabCreateProject {
 }
 
 impl IfGitLabNew for GitLab {
-    /// Return a connected gitlab object
+    /// Shim over 3rd party new() method
     fn new(config: &Config) -> Result<Box<GitLab>> {
         let host = config
             .host
@@ -52,19 +51,11 @@ impl IfGitLabNew for GitLab {
                 .insecure()
                 .build()
                 .with_context(|| {
-                    format!(
-                        "Failed to make insecure (http) connection to {}\n
-Try running `git lab init` to ensure all connection parameters are correct.",
-                        host
-                    )
+                    format!("Failed to make insecure (http) connection to {}", host)
                 })?,
-            _ => TPGitLabBuilder::new(host, token).build().with_context(|| {
-                format!(
-                    "Failed to make secure (https) connection to {}\n
-Try running `git lab init` to ensure all connection parameters are correct.",
-                    host
-                )
-            })?,
+            _ => TPGitLabBuilder::new(host, token)
+                .build()
+                .with_context(|| format!("Failed to make secure (https) connection to {}", host))?,
         };
         Ok(Box::new(GitLab { gl }))
     }
