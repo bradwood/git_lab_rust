@@ -5,14 +5,58 @@
 //! Where possible it will just re-export types from the 3rd party library when nothing special
 //! needs to be abstracted. However, to aid in mocking/testing and where some abstraction is
 //! needed, the methods here will fulfil that function.
-use anyhow::{Context, Result};
+
+use anyhow::{Context, Result, anyhow};
 
 pub use gitlab::{CreateProjectParams, Project};
 
+// Third party imports are prefixed with `TP`
+use gitlab::BuildGitStrategy as TPBuildGitStrategy;
+use gitlab::FeatureVisibilityLevel as TPFeatureVisibilityLevel;
 use gitlab::Gitlab as TPGitLab;
 use gitlab::GitlabBuilder as TPGitLabBuilder;
+use gitlab::MergeMethod as TPMergeMethod;
+use gitlab::VisibilityLevel as TPVisibilityLevel;
 
 use crate::config::Config;
+
+// TODO consider moving these functions to a separate module as they are not strictly part of the
+// shim
+pub fn pipeline_git_strategy_from_str(s: &str) -> Result<TPBuildGitStrategy> {
+    match s {
+        "fetch" => Ok(TPBuildGitStrategy::Fetch),
+        "clone" => Ok(TPBuildGitStrategy::Clone),
+        _ => Err(anyhow!("Incorrect git strategy"))
+    }
+}
+
+pub fn merge_method_from_str(s: &str) -> Result<TPMergeMethod> {
+    match s {
+        "merge" => Ok(TPMergeMethod::Merge),
+        "rebase-merge" => Ok(TPMergeMethod::RebaseMerge),
+        "fast-forward" => Ok(TPMergeMethod::FastForward),
+        _ => Err(anyhow!("Incorrect merge method"))
+    }
+}
+
+pub fn visibilily_level_from_str(s: &str) -> Result<TPVisibilityLevel> {
+    match s {
+        "public" => Ok(TPVisibilityLevel::Public),
+        "internal" => Ok(TPVisibilityLevel::Internal),
+        "private" => Ok(TPVisibilityLevel::Private),
+        _ => Err(anyhow!("Incorrect visibility level"))
+    }
+}
+
+pub fn feature_visibility_level_from_str(s: &str) -> Result<TPFeatureVisibilityLevel> {
+    match s {
+        "disabled" => Ok(TPFeatureVisibilityLevel::Disabled),
+        "private" => Ok(TPFeatureVisibilityLevel::Private),
+        "enabled" => Ok(TPFeatureVisibilityLevel::Enabled),
+        "public" => Ok(TPFeatureVisibilityLevel::Public),
+        _ => Err(anyhow!("Incorrect visibility level"))
+    }
+}
 
 /// Holds the GitLab wrapper that isolates the 3rd party GitLab lib
 pub struct GitLab {

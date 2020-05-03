@@ -11,6 +11,9 @@ clean:
 lint:
 	cargo clippy
 
+build:
+	cargo build
+
 check:
 	cargo check
 

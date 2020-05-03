@@ -65,8 +65,6 @@ fn main() -> Result<()> {
     let matches = clap::App::new("git-lab")
         .setting(clap::AppSettings::VersionlessSubcommands)
         .setting(clap::AppSettings::ColoredHelp)
-        // .setting(clap::AppSettings::ArgRequiredElseHelp)
-        // .setting(clap::AppSettings::ArgsNegateSubcommands)
         .setting(clap::AppSettings::SubcommandRequiredElseHelp)
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
@@ -82,8 +80,6 @@ fn main() -> Result<()> {
         .get_matches();
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
-
-    // trace!("Passed arguments = {:?}", matches);
 
     trace!("Initialising config from disk");
     let config = Config::defaults();
