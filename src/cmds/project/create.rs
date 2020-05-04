@@ -11,68 +11,163 @@ use crate::gitlab::{
     IfGitLabCreateProject};
 
 pub fn create_project_cmd(args: clap::ArgMatches, gitlab: impl IfGitLabCreateProject) -> Result<()> {
-    let mut params = &mut CreateProjectParams::builder();
+    let mut p = CreateProjectParams::builder();
 
-    for arg in &args.args {
-        let (key, _) = arg;
-        match *key {
-            // basic casting to URL
-            "import_url" => params = params.import_url(value_t_or_exit!(args, "import_url", url::Url)),
-
-            // basic casting to u64
-            "namespace_id" => params = params.namespace_id(value_t_or_exit!(args, "namespace_id", u64)),
-            "build_timeout" => params = params.build_timeout(value_t_or_exit!(args, "build_timeout", u64)),
-
-            // basic casting to bool for flags passed
-            // TODO: check occurences_of() instead
-            "enable_lfs" => params = params.lfs_enabled(value_t_or_exit!(args, "enable_lfs", bool)),
-            "enable_request_access" => params = params.request_access_enabled(value_t_or_exit!(args, "enable_request_access", bool)),
-            "enable_container_registry" => params = params.container_registry_enabled(value_t_or_exit!(args, "enable_container_registry", bool)),
-            "print_merge_request_url" => params = params.printing_merge_request_link_enabled(value_t_or_exit!(args, "print_merge_request_url", bool)),
-            "enable_auto_devops" => params = params.auto_devops_enabled(value_t_or_exit!(args, "enable_auto_devops", bool)),
-            "enable_shared_runners" => params = params.shared_runners_enabled(value_t_or_exit!(args, "enable_shared_runners", bool)),
-            "enable_public_builds" => params = params.public_builds(value_t_or_exit!(args, "public_builds", bool)),
-            "resolve_old_discussions" => params = params.resolve_outdated_diff_discussions(value_t_or_exit!(args, "resolve_old_discussions", bool)),
-            "only_merge_on_good_ci" => params = params.only_allow_merge_if_pipeline_succeeds(value_t_or_exit!(args, "only_merge_on_good_ci", bool)),
-            "only_merge_on_closed_discussions" => params = params.only_allow_merge_if_all_discussions_are_resolved(value_t_or_exit!(args, "only_merge_on_closed_discussions", bool)),
-            "auto_close_referenced_issues" => params = params.autoclose_referenced_issues(value_t_or_exit!(args, "auto_close_referenced_issues", bool)),
-            "auto_cancel_pending_pipelines" => params = params.auto_cancel_pending_pipelines(value_t_or_exit!(args, "auto_cancel_pending_pipelines", bool)),
-
-            // no casting, straight string
-            "description" => params = params.description(args.value_of("description").unwrap()),
-            "default_branch" => params = params.default_branch(args.value_of("default_branch").unwrap()),
-            "build_coverage_regex" => params = params.build_coverage_regex(args.value_of("build_coverage_regex").unwrap()),
-            "ci_config_path" => params = params.ci_config_path(args.value_of("ci_config_path").unwrap()),
-            "auto_devops_deploy_strategy" => params = params.auto_devops_deploy_strategy(args.value_of("auto_devops_deploy_strategy").unwrap()),
-
-            // specific cast to visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
-            "visibility" => params = params.visibility(visibilily_level_from_str(args.value_of("visibility").unwrap()).unwrap()),
-
-            // specific cast to feature_visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
-            "repo_access_level" => params = params.repository_access_level(feature_visibility_level_from_str(args.value_of("repo_access_level").unwrap()).unwrap()),
-            "mr_access_level" => params = params.merge_requests_access_level(feature_visibility_level_from_str(args.value_of("mr_access_level").unwrap()).unwrap()),
-            "builds_access_level" => params = params.builds_access_level(feature_visibility_level_from_str(args.value_of("builds_access_level").unwrap()).unwrap()),
-            "wiki_access_level" => params = params.wiki_access_level(feature_visibility_level_from_str(args.value_of("wiki_access_level").unwrap()).unwrap()),
-            "snippets_access_level" => params = params.snippets_access_level(feature_visibility_level_from_str(args.value_of("snippets_access_level").unwrap()).unwrap()),
-            "pages_access_level" => params = params.pages_access_level(feature_visibility_level_from_str(args.value_of("pages_access_level").unwrap()).unwrap()),
-
-            // specific cast to merge_method enum - unwrap()'s are safe as problems will be caught by clap.rs
-            "merge_method" => params = params.merge_method(merge_method_from_str(args.value_of("merge_method").unwrap()).unwrap()),
-
-            // specific cast to build_git_strategy enum - unwrap()'s are safe as problems will be caught by clap.rs
-            "pipeline_git_strategy" => params = params.build_git_strategy(pipeline_git_strategy_from_str(args.value_of("pipeline_git_strategy").unwrap()).unwrap()),
-
-            // cast to a Vec of Strings
-            "tag_list" => params = params.tag_list(values_t_or_exit!(args, "tag_list", String)),
-            "container_expiration_policy" => params = params.container_expiration_policy_attributes(values_t_or_exit!(args, "container_expiration_policy", String)),
-
-            _ => unreachable!(),
-        }
+    // basic casting to URL
+    if args.occurrences_of("import_url") > 0 {
+        debug!("import_url");
+        p.import_url(value_t_or_exit!(args, "import_url", url::Url));
     }
+
+    // basic casting to u64
+    if args.occurrences_of("namespace_id") > 0 {
+        debug!("namespace_id");
+        p.namespace_id(value_t_or_exit!(args, "namespace_id", u64));
+    }
+    if args.occurrences_of("build_timeout") > 0 {
+        debug!("build_timeout");
+        p.build_timeout(value_t_or_exit!(args, "build_timeout", u64));
+    }
+
+    // basic boolean flags
+    if args.occurrences_of("enable_lfs") > 0 {
+        debug!("enable_lfs");
+        p.lfs_enabled(true);
+    }
+    if args.occurrences_of("enable_request_access") > 0 {
+        debug!("enable_request_access");
+        p.request_access_enabled(true);
+    }
+    if args.occurrences_of("enable_container_registry") > 0 {
+        debug!("enable_container_registry");
+        p.container_registry_enabled(true);
+    }
+    if args.occurrences_of("print_merge_request_url") > 0 {
+        debug!("print_merge_request_url");
+        p.printing_merge_request_link_enabled(true);
+    }
+    if args.occurrences_of("enable_auto_devops") > 0 {
+        debug!("enable_auto_devops");
+        p.auto_devops_enabled(true);
+    }
+    if args.occurrences_of("enable_shared_runners") > 0 {
+        debug!("enable_shared_runners");
+        p.shared_runners_enabled(true);
+    }
+    if args.occurrences_of("enable_public_builds") > 0 {
+        debug!("enable_public_builds");
+        p.public_builds(true);
+    }
+    if args.occurrences_of("resolve_old_discussions") > 0 {
+        debug!("resolve_old_discussions");
+        p.resolve_outdated_diff_discussions(true);
+    }
+    if args.occurrences_of("only_merge_on_good_ci") > 0 {
+        debug!("only_merge_on_good_ci");
+        p.only_allow_merge_if_pipeline_succeeds(true);
+    }
+    if args.occurrences_of("only_merge_on_closed_discussions") > 0 {
+        debug!("only_merge_on_closed_discussions");
+        p.only_allow_merge_if_all_discussions_are_resolved(true);
+    }
+    if args.occurrences_of("auto_close_referenced_issues") > 0 {
+        debug!("auto_close_referenced_issues");
+        p.autoclose_referenced_issues(true);
+    }
+    if args.occurrences_of("auto_cancel_pending_pipelines") > 0 {
+        debug!("auto_cancel_pending_pipelines");
+        p.auto_cancel_pending_pipelines(true);
+    }
+
+    // no casting, straight string
+    if args.occurrences_of("description") > 0 {
+        debug!("description");
+        p.description(args.value_of("description").unwrap());
+    }
+    if args.occurrences_of("default_branch") > 0 {
+        debug!("default_branch");
+        p.default_branch(args.value_of("default_branch").unwrap());
+    }
+    if args.occurrences_of("build_coverage_regex") > 0 {
+        debug!("build_coverage_regex");
+        p.build_coverage_regex(args.value_of("build_coverage_regex").unwrap());
+    }
+    if args.occurrences_of("ci_config_path") > 0 {
+        debug!("ci_config_path");
+        p.ci_config_path(args.value_of("ci_config_path").unwrap());
+    }
+    if args.occurrences_of("auto_devops_deploy_strategy") > 0 {
+        debug!("auto_devops_deploy_strategy");
+        p.auto_devops_deploy_strategy(args.value_of("auto_devops_deploy_strategy").unwrap());
+    }
+
+    // specific cast to visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
+    if args.occurrences_of("visibility") > 0 {
+        debug!("visibility");
+        p.visibility(visibilily_level_from_str(args.value_of("visibility").unwrap()).unwrap());
+    }
+
+    // FIXME these don't work for some reason -- try doing another post after the create to set
+    // visibility requirements
+    // specific cast to feature_visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
+    if args.occurrences_of("repo_access_level") > 0 {
+        debug!("repo_access_level");
+        p.repository_access_level(feature_visibility_level_from_str(args.value_of("repo_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("issues_access_level") > 0 {
+        debug!("issues_access_level");
+        p.issues_access_level(feature_visibility_level_from_str(args.value_of("issues_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("mr_access_level") > 0 {
+        debug!("mr_access_level");
+        p.merge_requests_access_level(feature_visibility_level_from_str(args.value_of("mr_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("builds_access_level") > 0 {
+        debug!("builds_access_level");
+        p.builds_access_level(feature_visibility_level_from_str(args.value_of("builds_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("wiki_access_level") > 0 {
+        debug!("wiki_access_level");
+        p.wiki_access_level(feature_visibility_level_from_str(args.value_of("wiki_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("snippets_access_level") > 0 {
+        debug!("snippets_access_level");
+        p.snippets_access_level(feature_visibility_level_from_str(args.value_of("snippets_access_level").unwrap()).unwrap());
+    }
+    if args.occurrences_of("pages_access_level") > 0 {
+        debug!("pages_access_level");
+        p.pages_access_level(feature_visibility_level_from_str(args.value_of("pages_access_level").unwrap()).unwrap());
+    }
+
+    // specific cast to merge_method enum - unwrap()'s are safe as problems will be caught by clap.rs
+    if args.occurrences_of("merge_method") > 0 {
+        debug!("merge_method");
+        p.merge_method(merge_method_from_str(args.value_of("merge_method").unwrap()).unwrap());
+    }
+
+    // specific cast to build_git_strategy enum - unwrap()'s are safe as problems will be caught by clap.rs
+    if args.occurrences_of("pipeline_git_strategy") > 0 {
+        debug!("pipeline_git_strategy");
+        p.build_git_strategy(pipeline_git_strategy_from_str(args.value_of("pipeline_git_strategy").unwrap()).unwrap());
+    }
+
+    // FIXME array passing doesn't seem to work here... Investigate!
+    // cast to a Vec of Strings
+    if args.occurrences_of("tag_list") > 0 {
+        debug!("tag_list");
+        p.tag_list(values_t_or_exit!(args, "tag_list", String));
+    }
+    if args.occurrences_of("container_expiration_policy") > 0 {
+        debug!("container_expiration_policy");
+        p.container_expiration_policy_attributes(values_t_or_exit!(args, "container_expiration_policy", String));
+    }
+
+    let params = p.build();
+    debug!("params: {:#?}", params);
 
     // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
     let project = gitlab
-        .create_project(args.value_of("name").unwrap(), args.value_of("path"), Some(params.build().unwrap()))
+        .create_project(args.value_of("name").unwrap(), args.value_of("path").or_else(|| None), Some(params.unwrap()))
         .context("Failed to create project - check for name or path clashes on the server")?;
 
     println!("Project id: {}", project.id);
