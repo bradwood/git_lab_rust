@@ -6,6 +6,7 @@ use crate::config;
 use crate::gitlab;
 use crate::gitlab::IfGitLabNew;
 use crate::subcommand;
+use crate::utils::validator;
 
 
 /// This implements the `project` command. It proves the ability to create, query and manipulate
@@ -40,8 +41,8 @@ impl subcommand::SubCommand for Project<'_> {
                             .long("project_id")
                             .help("Project ID to attach")
                             .empty_values(false)
-                            .takes_value(true),
-                            // .validator() TODO
+                            .takes_value(true)
+                            .validator(validator::check_u64)
                     )
                     .after_help(
 "Attaching to a project makes a permanent configuration change to the local repo using standard \
@@ -75,6 +76,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .help("Project path/slug")
                             .empty_values(false)
                             .takes_value(true)
+                            .validator(validator::check_project_slug)
                     )
                     .arg(
                         clap::Arg::with_name("description")
@@ -91,7 +93,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .help("Project Namespace ID")
                             .takes_value(true)
                             .empty_values(false)
-                            //TODO add validator
+                            .validator(validator::check_u64)
                     )
                     .arg(
                         clap::Arg::with_name("default_branch")
@@ -101,7 +103,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             // .default_value("master")
                             .takes_value(true)
                             .empty_values(false)
-                            //TODO add validator
+                            .validator(validator::check_branch_name)
                     )
                     .arg(
                         clap::Arg::with_name("import_url")
@@ -110,7 +112,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .help("Imports repository from URL")
                             .takes_value(true)
                             .empty_values(false)
-                            //TODO add validator
+                            .validator(validator::check_url)
                     )
                     .arg(
                         clap::Arg::with_name("build_timeout")
@@ -118,6 +120,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .takes_value(true)
                             .help("Sets timeout before killing CI/CD pipeline in minutes")
                             .empty_values(false)
+                            .validator(validator::check_u64)
                     )
                     .arg(
                         clap::Arg::with_name("build_coverage_regex")
@@ -133,7 +136,6 @@ If invoked outside the context of a local repo, the command will fail.",
                             // .default_value(".gitlab-ci.yml")
                             .takes_value(true)
                             .empty_values(false)
-                            //TODO add validator
                     )
                     .arg(
                         clap::Arg::with_name("visibility")
@@ -141,56 +143,48 @@ If invoked outside the context of a local repo, the command will fail.",
                             .short("v")
                             .takes_value(true)
                             .possible_values(&["public", "internal", "private"])
-                            // .default_value("public")
                     )
                     .arg(
                         clap::Arg::with_name("issues_access_level")
                             .long("issues_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("repo_access_level")
                             .long("repo_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("mr_access_level")
                             .long("mr_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("builds_access_level")
                             .long("builds_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("wiki_access_level")
                             .long("wiki_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("snippets_access_level")
                             .long("snippets_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("pages_access_level")
                             .long("pages_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled", "public"])
-                            // .default_value("enabled")
                     )
                     .arg(
                         clap::Arg::with_name("enable_container_registry")
@@ -287,7 +281,6 @@ If invoked outside the context of a local repo, the command will fail.",
                             .takes_value(true)
                             .empty_values(false)
                             .possible_values(&["merge", "rebase-merge", "fast-forward"])
-                            // .default_value("merge")
                     )
                     .arg(
                         clap::Arg::with_name("pipeline_git_strategy")
@@ -295,7 +288,6 @@ If invoked outside the context of a local repo, the command will fail.",
                             .takes_value(true)
                             .empty_values(false)
                             .possible_values(&["fetch", "clone"])
-                            // .default_value("fetch")
                     )
             )
     }
@@ -310,7 +302,7 @@ If invoked outside the context of a local repo, the command will fail.",
 
         match args.subcommand() {
             ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), gitlab)?,
-            _ => ()
+            _ => unreachable!()
         }
 
         Ok(())
