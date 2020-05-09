@@ -28,17 +28,20 @@ impl subcommand::SubCommand for Project<'_> {
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
                         clap::Arg::with_name("name")
-                            // .short("n")
+                            .short("n")
                             .long("name")
                             .help("Project name to attach")
+                            .empty_values(false)
                             .takes_value(true),
                     )
                     .arg(
                         clap::Arg::with_name("id")
-                            // .short("p")
+                            .short("p")
                             .long("project_id")
                             .help("Project ID to attach")
+                            .empty_values(false)
                             .takes_value(true),
+                            // .validator() TODO
                     )
                     .after_help(
 "Attaching to a project makes a permanent configuration change to the local repo using standard \
@@ -68,6 +71,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("path")
                             .long("path")
+                            .short("p")
                             .help("Project path/slug")
                             .empty_values(false)
                             .takes_value(true)
@@ -75,6 +79,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("description")
                             .long("desc")
+                            .short("d")
                             .help("Project description")
                             .empty_values(false)
                             .takes_value(true)
@@ -82,6 +87,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("namespace_id")
                             .long("namespace_id")
+                            .short("n")
                             .help("Project Namespace ID")
                             .takes_value(true)
                             .empty_values(false)
@@ -90,6 +96,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("default_branch")
                             .long("default_branch")
+                            .short("b")
                             .help("Default branch")
                             // .default_value("master")
                             .takes_value(true)
@@ -99,6 +106,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("import_url")
                             .long("import_url")
+                            .short("u")
                             .help("Imports repository from URL")
                             .takes_value(true)
                             .empty_values(false)
@@ -130,6 +138,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("visibility")
                             .long("visibility")
+                            .short("v")
                             .takes_value(true)
                             .possible_values(&["public", "internal", "private"])
                             // .default_value("public")
@@ -224,6 +233,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("tag_list")
                             .long("tag_list")
+                            .short("t")
                             .help("Sets tag list for the project")
                             .takes_value(true)
                             .multiple(true)
@@ -273,6 +283,7 @@ If invoked outside the context of a local repo, the command will fail.",
                     .arg(
                         clap::Arg::with_name("merge_method")
                             .long("merge_method")
+                            .short("m")
                             .takes_value(true)
                             .empty_values(false)
                             .possible_values(&["merge", "rebase-merge", "fast-forward"])
