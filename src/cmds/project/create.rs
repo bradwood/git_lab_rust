@@ -2,10 +2,9 @@ use anyhow::{Context, Result};
 use clap::{value_t_or_exit, values_t_or_exit};
 
 use crate::gitlab::{
-    feature_visibility_level_from_str,
-    merge_method_from_str,
-    visibilily_level_from_str,
-    pipeline_git_strategy_from_str,
+    feature_visibility_level_from_str, merge_method_from_str, pipeline_git_strategy_from_str,
+    visibility_level_from_str, CreateProjectParams, IfGitLabCreateProject,
+};
 
     CreateProjectParams,
     IfGitLabCreateProject};
@@ -104,7 +103,7 @@ pub fn create_project_cmd(args: clap::ArgMatches, gitlab: impl IfGitLabCreatePro
     // specific cast to visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
     if args.occurrences_of("visibility") > 0 {
         debug!("visibility");
-        p.visibility(visibilily_level_from_str(args.value_of("visibility").unwrap()).unwrap());
+        p.visibility(visibility_level_from_str(args.value_of("visibility").unwrap()).unwrap());
     }
 
     // FIXME these don't work for some reason -- try doing another post after the create to set

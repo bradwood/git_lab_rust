@@ -39,7 +39,7 @@ pub fn merge_method_from_str(s: &str) -> Result<TPMergeMethod> {
     }
 }
 
-pub fn visibilily_level_from_str(s: &str) -> Result<TPVisibilityLevel> {
+pub fn visibility_level_from_str(s: &str) -> Result<TPVisibilityLevel> {
     match s {
         "public" => Ok(TPVisibilityLevel::Public),
         "internal" => Ok(TPVisibilityLevel::Internal),
