@@ -210,11 +210,13 @@ mod project_create_unit_tests {
     use std::path::Path;
 
     use anyhow::anyhow;
-    use clap::App;
+    use clap::SubCommand as ClapSubCommand;
     use gitlab::types::*;
     use serde::de::DeserializeOwned;
 
     use crate::gitlab::Project;
+    use crate::subcommand::SubCommand;
+    use crate::cmds::project;
 
     use super::*;
 
@@ -223,7 +225,12 @@ mod project_create_unit_tests {
     }
 
     impl IfGitLabCreateProject for GitlabWithMockProject {
-        fn create_project<N: AsRef<str>, P: AsRef<str>>(&self, name: N, path: Option<P>, params: Option<CreateProjectParams>) -> Result<Project> {
+        fn create_project<N: AsRef<str>, P: AsRef<str>>(
+            &self,
+            _name: N,
+            _path: Option<P>,
+            _params: Option<CreateProjectParams>,
+        ) -> Result<Project> {
             match &self.project {
                 Ok(p) => Ok(p.clone()),
                 Err(e) => Err(anyhow!("{}", e)),
@@ -246,18 +253,24 @@ mod project_create_unit_tests {
     #[test]
     fn test_create_basic_project() {
         // GIVEN:
-        let a = App::new("create")
-            .arg(clap::Arg::with_name("name").help("Project name").takes_value(true).required(true))
-            .get_matches_from(vec!["create", "proj_name"]);
-        println!("args = {:?}", a);
+        let p_cmd = project::Project{
+            clap_cmd: ClapSubCommand::with_name("project")
+        };
+        let args = p_cmd
+            .gen_clap_command()
+            .get_matches_from(vec!["project", "create", "project_name"]);
+        let matches = args.subcommand_matches("create");
 
         let mock_project: Project = load_mock_from_disk("tests/data/project.json");
 
-        let g = GitlabWithMockProject { project: Ok(mock_project) };
+        let g = GitlabWithMockProject {
+            project: Ok(mock_project),
+        };
 
         // WHEN:
-        let p = create_project_cmd(a, g);
+        let p = create_project_cmd(matches.unwrap().clone(), g);
 
         // THEN:
+        assert!(p.is_ok())
     }
 }
