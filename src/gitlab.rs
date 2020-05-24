@@ -8,110 +8,136 @@
 
 use anyhow::{Context, Result, anyhow};
 
-pub use gitlab::{CreateProjectParams, Project};
+pub use gitlab::Project;
 
-// Third party imports are prefixed with `TP`
-use gitlab::BuildGitStrategy as TPBuildGitStrategy;
-use gitlab::FeatureVisibilityLevel as TPFeatureVisibilityLevel;
-use gitlab::Gitlab as TPGitLab;
-use gitlab::GitlabBuilder as TPGitLabBuilder;
-use gitlab::MergeMethod as TPMergeMethod;
-use gitlab::VisibilityLevel as TPVisibilityLevel;
+pub use gitlab::Gitlab as Client;
+pub use gitlab::api::Query;
+pub use gitlab::api::projects::CreateProject;
+
+pub use gitlab::api::common::EnableState;
+pub use gitlab::api::common::VisibilityLevel;
+pub use gitlab::api::projects::AutoDevOpsDeployStrategy;
+pub use gitlab::api::projects::FeatureAccessLevel;
+pub use gitlab::api::projects::FeatureAccessLevelPublic;
+pub use gitlab::api::projects::MergeMethod;
+pub use gitlab::api::projects::BuildGitStrategy;
 
 use crate::config::Config;
 
-// TODO consider moving these functions to a separate module as they are not strictly part of the
-// shim
-pub fn pipeline_git_strategy_from_str(s: &str) -> Result<TPBuildGitStrategy> {
-    match s {
-        "fetch" => Ok(TPBuildGitStrategy::Fetch),
-        "clone" => Ok(TPBuildGitStrategy::Clone),
-        _ => Err(anyhow!("Incorrect git strategy"))
+/// Misc converter functions used to convert string args to Gitlab types
+pub mod converter {
+    use super::*;
+
+    pub fn auto_devops_deploy_strategy_from_str(s: &str) -> Result<AutoDevOpsDeployStrategy> {
+        match s {
+            "continuous" => Ok(AutoDevOpsDeployStrategy::Continuous),
+            "manual" => Ok(AutoDevOpsDeployStrategy::Manual),
+            "timed_incremental" => Ok(AutoDevOpsDeployStrategy::TimedIncremental),
+            _ => Err(anyhow!("Incorrect state"))
+        }
+    }
+
+    pub fn enable_state_from_str(s: &str) -> Result<EnableState> {
+        match s {
+            "enabled" => Ok(EnableState::Enabled),
+            "disabled" => Ok(EnableState::Disabled),
+            _ => Err(anyhow!("Incorrect state"))
+        }
+    }
+
+    pub fn pipeline_git_strategy_from_str(s: &str) -> Result<BuildGitStrategy> {
+        match s {
+            "fetch" => Ok(BuildGitStrategy::Fetch),
+            "clone" => Ok(BuildGitStrategy::Clone),
+            _ => Err(anyhow!("Incorrect git strategy"))
+        }
+    }
+
+    pub fn merge_method_from_str(s: &str) -> Result<MergeMethod> {
+        match s {
+            "merge" => Ok(MergeMethod::Merge),
+            "rebase-merge" => Ok(MergeMethod::RebaseMerge),
+            "fast-forward" => Ok(MergeMethod::FastForward),
+            _ => Err(anyhow!("Incorrect merge method"))
+        }
+    }
+
+    pub fn visibility_level_from_str(s: &str) -> Result<VisibilityLevel> {
+        match s {
+            "public" => Ok(VisibilityLevel::Public),
+            "internal" => Ok(VisibilityLevel::Internal),
+            "private" => Ok(VisibilityLevel::Private),
+            _ => Err(anyhow!("Incorrect visibility level"))
+        }
+    }
+
+    pub fn feature_access_level_public_from_str(s: &str) -> Result<FeatureAccessLevelPublic> {
+        match s {
+            "disabled" => Ok(FeatureAccessLevelPublic::Disabled),
+            "private" => Ok(FeatureAccessLevelPublic::Private),
+            "enabled" => Ok(FeatureAccessLevelPublic::Enabled),
+            "public" => Ok(FeatureAccessLevelPublic::Public),
+            _ => Err(anyhow!("Incorrect visibility level"))
+        }
+    }
+    pub fn feature_access_level_from_str(s: &str) -> Result<FeatureAccessLevel> {
+        match s {
+            "disabled" => Ok(FeatureAccessLevel::Disabled),
+            "private" => Ok(FeatureAccessLevel::Private),
+            "enabled" => Ok(FeatureAccessLevel::Enabled),
+            _ => Err(anyhow!("Incorrect Feature Access level"))
+        }
     }
 }
+// /// Holds the GitLab wrapper that isolates the 3rd party GitLab lib
+// pub struct GitLabClient {
+//     client: TPGitLab,
+// }
 
-pub fn merge_method_from_str(s: &str) -> Result<TPMergeMethod> {
-    match s {
-        "merge" => Ok(TPMergeMethod::Merge),
-        "rebase-merge" => Ok(TPMergeMethod::RebaseMerge),
-        "fast-forward" => Ok(TPMergeMethod::FastForward),
-        _ => Err(anyhow!("Incorrect merge method"))
-    }
+// pub trait IfGitLabNew {
+//     /// Create a connected instance of GitLab
+//     fn new(config: &Config) -> Result<Box<Self>>;
+// }
+
+// pub trait IfGitLabCreateProject {
+//     /// Shim over 3rd party create_project() method
+//     fn create_project<N: AsRef<str>, P: AsRef<str>>(
+//         &self,
+//         name: N,
+//         path: Option<P>,
+//         params: Option<CreateProjectParams>,
+//     ) -> Result<Project>;
+// }
+
+/// Shim over 3rd party new() method
+pub fn new(config: &Config) -> Result<Box<Client>> {
+    let host = config
+        .host
+        .as_ref()
+        .context("GitLab host not set. Run `git lab init`.")?;
+    let token = config
+        .token
+        .as_ref()
+        .context("GitLab token not set. Run `git lab init`.")?;
+
+    let client = match config.tls {
+        Some(tls) if !tls => Client::new_insecure(host, token)
+            .with_context(|| {
+                format!("Failed to make insecure (http) connection to {}", host)
+            })? ,
+        _ => Client::new(host, token)
+            .with_context(|| format!("Failed to make secure (https) connection to {}", host))?,
+    };
+    Ok(Box::new(client))
 }
 
-pub fn visibility_level_from_str(s: &str) -> Result<TPVisibilityLevel> {
-    match s {
-        "public" => Ok(TPVisibilityLevel::Public),
-        "internal" => Ok(TPVisibilityLevel::Internal),
-        "private" => Ok(TPVisibilityLevel::Private),
-        _ => Err(anyhow!("Incorrect visibility level"))
-    }
-}
-
-pub fn feature_visibility_level_from_str(s: &str) -> Result<TPFeatureVisibilityLevel> {
-    match s {
-        "disabled" => Ok(TPFeatureVisibilityLevel::Disabled),
-        "private" => Ok(TPFeatureVisibilityLevel::Private),
-        "enabled" => Ok(TPFeatureVisibilityLevel::Enabled),
-        "public" => Ok(TPFeatureVisibilityLevel::Public),
-        _ => Err(anyhow!("Incorrect visibility level"))
-    }
-}
-
-/// Holds the GitLab wrapper that isolates the 3rd party GitLab lib
-pub struct GitLab {
-    gl: TPGitLab,
-}
-
-pub trait IfGitLabNew {
-    /// Create a connected instance of GitLab
-    fn new(config: &Config) -> Result<Box<Self>>;
-}
-
-pub trait IfGitLabCreateProject {
-    /// Shim over 3rd party create_project() method
-    fn create_project<N: AsRef<str>, P: AsRef<str>>(
-        &self,
-        name: N,
-        path: Option<P>,
-        params: Option<CreateProjectParams>,
-    ) -> Result<Project>;
-}
-
-impl IfGitLabNew for GitLab {
-    /// Shim over 3rd party new() method
-    fn new(config: &Config) -> Result<Box<GitLab>> {
-        let host = config
-            .host
-            .as_ref()
-            .context("GitLab host not set. Run `git lab init`.")?;
-        let token = config
-            .token
-            .as_ref()
-            .context("GitLab token not set. Run `git lab init`.")?;
-
-        let gl = match config.tls {
-            Some(tls) if !tls => TPGitLabBuilder::new(host, token)
-                .insecure()
-                .build()
-                .with_context(|| {
-                    format!("Failed to make insecure (http) connection to {}", host)
-                })?,
-            _ => TPGitLabBuilder::new(host, token)
-                .build()
-                .with_context(|| format!("Failed to make secure (https) connection to {}", host))?,
-        };
-        Ok(Box::new(GitLab { gl }))
-    }
-}
-
-impl IfGitLabCreateProject for GitLab {
-    fn create_project<N: AsRef<str>, P: AsRef<str>>(
-        &self,
-        name: N,
-        path: Option<P>,
-        params: Option<CreateProjectParams>,
-    ) -> Result<Project> {
-        Ok(self.gl.create_project(&name, path, params)?)
-    }
-}
+// impl IfGitLabCreateProject for GitLabClient {
+//     fn create_project<N: AsRef<str>, P: AsRef<str>>(
+//         &self,
+//         name: N,
+//         path: Option<P>,
+//         params: Option<CreateProjectParams>,
+//     ) -> Result<Project> {
+//         Ok(self.client.create_project(&name, path, params)?)
+//     }
+// }

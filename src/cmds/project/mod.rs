@@ -1,17 +1,17 @@
 mod create;
 
 use anyhow::Result;
+use anyhow::Context;
 
 use crate::config;
 use crate::gitlab;
-use crate::gitlab::IfGitLabNew;
+// use crate::gitlab::IfGitLabNew;
 use crate::subcommand;
 use crate::utils::validator;
 
 
 /// This implements the `project` command. It proves the ability to create, query and manipulate
 /// projects in GitLab.
-///
 pub struct Project<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
@@ -225,8 +225,8 @@ If invoked outside the context of a local repo, the command will fail.",
                             .help("Enables shared CI/CD runners")
                     )
                     .arg(
-                        clap::Arg::with_name("tag_list")
-                            .long("tag_list")
+                        clap::Arg::with_name("tags")
+                            .long("tags")
                             .short("t")
                             .help("Sets tag list for the project")
                             .takes_value(true)
@@ -298,11 +298,11 @@ If invoked outside the context of a local repo, the command will fail.",
         trace!("Config: {:?}", config);
         debug!("Args: {:#?}", args);
 
-        let gitlab = *gitlab::GitLab::new(&config)?;
+        let gitlabclient = gitlab::new(&config).context("Could not create GitLab client connection.")?;
 
         match args.subcommand() {
-            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), gitlab)?,
-            _ => unreachable!()
+            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), *gitlabclient)?,
+            _ => unreachable!(),
         }
 
         Ok(())

@@ -1,24 +1,44 @@
+use std::borrow::Cow;
+
 use anyhow::{Context, Result};
 use clap::{value_t_or_exit, values_t_or_exit};
+use serde::Deserialize;
 
 use crate::gitlab::{
-    feature_visibility_level_from_str, merge_method_from_str, pipeline_git_strategy_from_str,
-    visibility_level_from_str, CreateProjectParams, IfGitLabCreateProject,
+    CreateProject,
+    Client,
+    Query,
 };
+use crate::gitlab::converter::{
+    auto_devops_deploy_strategy_from_str,
+    enable_state_from_str,
+    feature_access_level_from_str,
+    feature_access_level_public_from_str,
+    merge_method_from_str,
+    pipeline_git_strategy_from_str,
+    visibility_level_from_str,
+};
+
+#[derive(Debug, Deserialize)]
+struct Project {
+    id: u64,
+    web_url: String,
+}
 
 pub fn create_project_cmd(
     args: clap::ArgMatches,
-    gitlab: impl IfGitLabCreateProject,
+    gitlabclient: Client,
 ) -> Result<()> {
-    let mut p = CreateProjectParams::builder();
 
-    // basic casting to URL
+    let mut p = CreateProject::builder();
+
+    // url argument -- validation done by clap.rs
     if args.occurrences_of("import_url") > 0 {
         debug!("import_url");
-        p.import_url(value_t_or_exit!(args, "import_url", url::Url));
+        p.import_url(Cow::from(args.value_of("import_url").unwrap()));
     }
 
-    // basic casting to u64
+    // u64 arguments
     if args.occurrences_of("namespace_id") > 0 {
         debug!("namespace_id");
         p.namespace_id(value_t_or_exit!(args, "namespace_id", u64));
@@ -73,12 +93,8 @@ pub fn create_project_cmd(
         debug!("auto_close_referenced_issues");
         p.autoclose_referenced_issues(true);
     }
-    if args.occurrences_of("auto_cancel_pending_pipelines") > 0 {
-        debug!("auto_cancel_pending_pipelines");
-        p.auto_cancel_pending_pipelines(true);
-    }
 
-    // no casting, straight string
+    // straight string
     if args.occurrences_of("description") > 0 {
         debug!("description");
         p.description(args.value_of("description").unwrap());
@@ -95,12 +111,19 @@ pub fn create_project_cmd(
         debug!("ci_config_path");
         p.ci_config_path(args.value_of("ci_config_path").unwrap());
     }
-    if args.occurrences_of("auto_devops_deploy_strategy") > 0 {
-        debug!("auto_devops_deploy_strategy");
-        p.auto_devops_deploy_strategy(args.value_of("auto_devops_deploy_strategy").unwrap());
+
+    // EnableState enum from boolean
+    if args.occurrences_of("auto_cancel_pending_pipelines") > 0 {
+        debug!("auto_cancel_pending_pipelines");
+        p.auto_cancel_pending_pipelines(enable_state_from_str(args.value_of("auto_cancel_pending_pipelines").unwrap()).unwrap());
     }
 
-    // specific conversion to visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
+    //  specific conversion to auto_devops_deploy_strategy enum - unwrap()'s are safe as problems will be caught by clap.rs
+    if args.occurrences_of("auto_devops_deploy_strategy") > 0 {
+        debug!("auto_devops_deploy_strategy");
+        p.auto_devops_deploy_strategy(auto_devops_deploy_strategy_from_str(args.value_of("auto_devops_deploy_strategy").unwrap()).unwrap());
+    }
+    //  specific conversion to visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
     if args.occurrences_of("visibility") > 0 {
         debug!("visibility");
         p.visibility(visibility_level_from_str(args.value_of("visibility").unwrap()).unwrap());
@@ -108,50 +131,55 @@ pub fn create_project_cmd(
 
     // FIXME these don't work for some reason -- try doing another post after the create to set
     // visibility requirements
-    // specific conversion to feature_visibilily_level enum - unwrap()'s are safe as problems will be caught by clap.rs
+
+    // specific conversion to feature_access_level enum - unwrap()'s are safe as problems will be
+    // caught by clap.rs
     if args.occurrences_of("repo_access_level") > 0 {
         debug!("repo_access_level");
         p.repository_access_level(
-            feature_visibility_level_from_str(args.value_of("repo_access_level").unwrap()).unwrap(),
+            feature_access_level_from_str(args.value_of("repo_access_level").unwrap()).unwrap(),
         );
     }
     if args.occurrences_of("issues_access_level") > 0 {
         debug!("issues_access_level");
         p.issues_access_level(
-            feature_visibility_level_from_str(args.value_of("issues_access_level").unwrap())
-                .unwrap(),
+            feature_access_level_from_str(args.value_of("issues_access_level").unwrap()) .unwrap(),
         );
     }
     if args.occurrences_of("mr_access_level") > 0 {
         debug!("mr_access_level");
         p.merge_requests_access_level(
-            feature_visibility_level_from_str(args.value_of("mr_access_level").unwrap()).unwrap(),
+            feature_access_level_from_str(args.value_of("mr_access_level").unwrap()).unwrap(),
         );
     }
+
     if args.occurrences_of("builds_access_level") > 0 {
         debug!("builds_access_level");
         p.builds_access_level(
-            feature_visibility_level_from_str(args.value_of("builds_access_level").unwrap())
+            feature_access_level_from_str(args.value_of("builds_access_level").unwrap())
                 .unwrap(),
         );
     }
     if args.occurrences_of("wiki_access_level") > 0 {
         debug!("wiki_access_level");
         p.wiki_access_level(
-            feature_visibility_level_from_str(args.value_of("wiki_access_level").unwrap()).unwrap(),
+            feature_access_level_from_str(args.value_of("wiki_access_level").unwrap()).unwrap(),
         );
     }
     if args.occurrences_of("snippets_access_level") > 0 {
         debug!("snippets_access_level");
         p.snippets_access_level(
-            feature_visibility_level_from_str(args.value_of("snippets_access_level").unwrap())
+            feature_access_level_from_str(args.value_of("snippets_access_level").unwrap())
                 .unwrap(),
         );
     }
+
+    // specific conversion to feature_access_level_public enum - unwrap()'s are safe as problems
+    // will be caught by clap.rs
     if args.occurrences_of("pages_access_level") > 0 {
         debug!("pages_access_level");
         p.pages_access_level(
-            feature_visibility_level_from_str(args.value_of("pages_access_level").unwrap())
+            feature_access_level_public_from_str(args.value_of("pages_access_level").unwrap())
                 .unwrap(),
         );
     }
@@ -171,31 +199,31 @@ pub fn create_project_cmd(
         );
     }
 
-    // FIXME array passing doesn't seem to work here... Investigate!
-    // Upstream BUG: https://gitlab.kitware.com/utils/rust-gitlab/-/issues/34
-    if args.occurrences_of("tag_list") > 0 {
+    if args.occurrences_of("tags") > 0 {
         debug!("tag_list");
-        p.tag_list(values_t_or_exit!(args, "tag_list", String));
-    }
-    if args.occurrences_of("container_expiration_policy") > 0 {
-        debug!("container_expiration_policy");
-        p.container_expiration_policy_attributes(values_t_or_exit!(
-            args,
-            "container_expiration_policy",
-            String
-        ));
+        for t in values_t_or_exit!(args, "tag", String) {
+            p.tag(t);
+        }
     }
 
-    let params = p.build();
-    debug!("params: {:#?}", params);
+    // if args.occurrences_of("container_expiration_policy") > 0 {
+    //     debug!("container_expiration_policy");
+    //     p.container_expiration_policy_attributes(values_t_or_exit!(
+    //         args,
+    //         "container_expiration_policy",
+    //         String
+    //     ));
+    // }
+
+    // arg "name" is enforced by clap.rs so unwrap() is safe...
+    let endpoint = p.name(args.value_of("name").unwrap()).build().unwrap();
+
     debug!("args: {:#?}", args);
+    debug!("endpoint: {:#?}", endpoint);
+
     // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
-    let project = gitlab
-        .create_project(
-            args.value_of("name").unwrap(),
-            args.value_of("path").or_else(|| None),
-            Some(params.unwrap()),
-        )
+    // TODO: fix unwrap() to check errors
+    let project: Project = endpoint.query(&gitlabclient)
         .context("Failed to create project - check for name or path clashes on the server")?;
 
     println!("Project id: {}", project.id);
