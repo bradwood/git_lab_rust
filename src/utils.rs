@@ -62,7 +62,7 @@ pub mod validator {
     // the below should be good enough for most cases.
     // See https://github.com/libgit2/libgit2/issues/5506
     pub fn check_branch_name(v: String) -> Result<(), String> {
-        if Reference::is_valid_name(&("refs/heads/".to_owned() + &v)) && !v.starts_with("-") {
+        if Reference::is_valid_name(&("refs/heads/".to_owned() + &v)) && !v.starts_with('-') {
             return Ok(());
         }
         Err(String::from("Bad git ref name, see git-check-ref-format(1) for details"))
