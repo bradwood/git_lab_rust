@@ -1,11 +1,9 @@
-//! This module inplements a thin shim over the 3rd party GitLab API. As a result we don't
-//! unit-test the shim code, and therefore try to keep as much logic out of this as possible, in
-//! order to keep the shim as thin as possible.
+//! This module inplements a thin shim over the 3rd party GitLab API where needed. As a result we
+//! don't unit-test the shim code, and therefore try to keep as much logic out of this as possible,
+//! in order to keep the shim as thin as possible.
 //!
 //! Where possible it will just re-export types from the 3rd party library when nothing special
-//! needs to be abstracted. However, to aid in mocking/testing and where some abstraction is
-//! needed, the methods here will fulfil that function.
-
+//! needs to be abstracted.
 use anyhow::{Context, Result, anyhow};
 
 pub use gitlab::Project;
@@ -89,25 +87,6 @@ pub mod converter {
         }
     }
 }
-// /// Holds the GitLab wrapper that isolates the 3rd party GitLab lib
-// pub struct GitLabClient {
-//     client: TPGitLab,
-// }
-
-// pub trait IfGitLabNew {
-//     /// Create a connected instance of GitLab
-//     fn new(config: &Config) -> Result<Box<Self>>;
-// }
-
-// pub trait IfGitLabCreateProject {
-//     /// Shim over 3rd party create_project() method
-//     fn create_project<N: AsRef<str>, P: AsRef<str>>(
-//         &self,
-//         name: N,
-//         path: Option<P>,
-//         params: Option<CreateProjectParams>,
-//     ) -> Result<Project>;
-// }
 
 /// Shim over 3rd party new() method
 pub fn new(config: &Config) -> Result<Box<Client>> {
@@ -130,14 +109,3 @@ pub fn new(config: &Config) -> Result<Box<Client>> {
     };
     Ok(Box::new(client))
 }
-
-// impl IfGitLabCreateProject for GitLabClient {
-//     fn create_project<N: AsRef<str>, P: AsRef<str>>(
-//         &self,
-//         name: N,
-//         path: Option<P>,
-//         params: Option<CreateProjectParams>,
-//     ) -> Result<Project> {
-//         Ok(self.client.create_project(&name, path, params)?)
-//     }
-// }
