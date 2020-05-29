@@ -151,6 +151,17 @@ If invoked outside the context of a local repo, the command will fail.",
                             .possible_values(&["disabled", "private", "enabled"])
                     )
                     .arg(
+                        clap::Arg::with_name("disable_issues")
+                            .long("disable_issues")
+                            .help("Deprecated - use `issues_access_level`")
+                    )
+                    .arg(
+                        clap::Arg::with_name("forking_access_level")
+                            .long("forking_access_level")
+                            .takes_value(true)
+                            .possible_values(&["disabled", "private", "enabled"])
+                    )
+                    .arg(
                         clap::Arg::with_name("repo_access_level")
                             .long("repo_access_level")
                             .takes_value(true)
@@ -163,10 +174,20 @@ If invoked outside the context of a local repo, the command will fail.",
                             .possible_values(&["disabled", "private", "enabled"])
                     )
                     .arg(
+                        clap::Arg::with_name("disable_mr")
+                            .long("disable_mr")
+                            .help("Deprecated - use `mr_access_level`")
+                    )
+                    .arg(
                         clap::Arg::with_name("builds_access_level")
                             .long("builds_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("disable_builds")
+                            .long("disable_builds")
+                            .help("Deprecated - use `builds_access_level`")
                     )
                     .arg(
                         clap::Arg::with_name("wiki_access_level")
@@ -175,10 +196,20 @@ If invoked outside the context of a local repo, the command will fail.",
                             .possible_values(&["disabled", "private", "enabled"])
                     )
                     .arg(
+                        clap::Arg::with_name("disable_wiki")
+                            .long("disable_wiki")
+                            .help("Deprecated - use `wiki_access_level`")
+                    )
+                    .arg(
                         clap::Arg::with_name("snippets_access_level")
                             .long("snippets_access_level")
                             .takes_value(true)
                             .possible_values(&["disabled", "private", "enabled"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("disable_snippets")
+                            .long("disable_snippets")
+                            .help("Deprecated - use `snippets_access_level`")
                     )
                     .arg(
                         clap::Arg::with_name("pages_access_level")
@@ -289,6 +320,13 @@ If invoked outside the context of a local repo, the command will fail.",
                             .empty_values(false)
                             .possible_values(&["fetch", "clone"])
                     )
+                    .after_help(
+"Note that the `*_access_level` are enhancements for the various `disable_*` flags which are  \
+due to be deprecated at some point. However, at the time of writing, there is a GitLab bug which \
+means that passing `disabled` to the `*_access_level` switches doesn't have any effect. So the \
+deprecated `disable_*` flags (which do _currently_ work) remain in place for now. \
+If you have errors using the `*_disabled` flags your GitLab server may no longer support them.",
+                    ),
             )
     }
 
