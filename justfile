@@ -1,4 +1,3 @@
-# generate README.md
 readme:
 	cargo readme > README.md
 
@@ -37,7 +36,6 @@ all-test:
 test TEST="":
 	cargo test {{TEST}} -- --test-threads=1
 	
-# generate coverage report and percentage
 cov:
 	#!/usr/bin/env bash
 	TARGET=$(find target/debug -maxdepth 1 -name "git_lab-*" -executable -type f -exec stat -c '%Y %n' {} \;  | sort -nr | head -1 |cut -f2 -d' ')
