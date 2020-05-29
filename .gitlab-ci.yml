@@ -1,5 +1,13 @@
 image: bradqwood/rust-build-docker:latest
 
+variables:
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+
+cache:
+  paths:
+    - target/
+    - .cargo/
+
 before_script:
   - rustup --version
   - cargo install just
