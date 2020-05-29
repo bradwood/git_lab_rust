@@ -1,6 +1,6 @@
 [package]
 name = "git_lab_cli"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
 description = "A custom git command for interacting with a GitLab server"
@@ -18,8 +18,15 @@ license = "MIT"
 anyhow = "1.0"
 dialoguer = "0.5"
 git2 = "0.13"
+gitlab = { git = "https://gitlab.kitware.com/utils/rust-gitlab.git" }
+# gitlab = "0.1210"
+lazy_static = "1.4"
 log = "0.4"
 loggerv = "0.7"
+serde_json = "1.0.52"
+serde = "1.0.106"
+url = "2.1.1"
+regex = "1"
 
 [dependencies.clap]
 version = "2.33.0"
@@ -33,6 +40,7 @@ lazy_static = "1.4"
 predicates = "1.0"
 rexpect = "0.3"
 rstest = "0.6"
+# chrono = "0.4.11"
 
 [[bin]]
 name = "git-lab"           # The name of the target.

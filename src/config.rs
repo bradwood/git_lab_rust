@@ -221,8 +221,8 @@ impl Config {
         config
     }
 
-    /// Saves the config to the appropriate config file. NOTE it will silently apply XDG
-    /// instead of Global if config.user_config_type is set to XDG, and vice versa.
+    /// Saves the config to the appropriate config file. NOTE it will apply XDG instead of Global
+    /// if config.user_config_type is set to XDG, and vice versa.
     pub fn save(&self, level:GitConfigSaveableLevel) -> Result<()> {
         match level {
             GitConfigSaveableLevel::Repo => {
@@ -254,6 +254,7 @@ mod config_unit_tests {
     use rstest::*;
     use std::path::Path;
     use std::sync::Once;
+
     use super::*;
 
     // TODO figure out a way of importing this from tests/common/mod.rs

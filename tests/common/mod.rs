@@ -34,7 +34,7 @@ pub fn initialise() {
     });
 }
 
-// -- convenience functions --
+// -- convenience functions -
 
 pub fn cd_home() {
     env::set_current_dir(Path::new(&HOME.path())).unwrap();

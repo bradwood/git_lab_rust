@@ -8,9 +8,8 @@ mod base_integration_tests {
         let mut cmd = Command::cargo_bin("git-lab").unwrap();
         let assert = cmd.assert();
         assert
-            .success()
-            .code(0)
-            .stdout(predicate::str::contains("git-lab [FLAGS] [SUBCOMMAND]"));
+            .code(1)
+            .stderr(predicate::str::contains("custom git command for interacting with a GitLab server"));
     }
 
     // TODO: Add verbosity test!!

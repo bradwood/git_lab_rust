@@ -12,6 +12,9 @@ This is a cli tool that adds the `lab` command to `git` to enable interaction wi
 The tool is designed to work as a custom command to the vanilla `git` cli command. Current
 feature include:
 * `init` -- initialise credentials aganst a remote GitLab server
+* `project` -- interact with GitLab projects
+    * `project create` -- create project
+    * `project attach` -- associate a local repo with a project -- still WIP
 
 `git-lab` by default stores it's config using standard `git config` machinery.
 
