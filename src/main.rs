@@ -12,7 +12,7 @@
 //! * `init` -- initialise credentials aganst a remote GitLab server
 //! * `project` -- interact with GitLab projects
 //!     * `project create` -- create project
-//!     * `project attach` -- associate a local repo with a project
+//!     * `project attach` -- associate a local repo with a project -- still WIP
 //!
 //! `git-lab` by default stores it's config using standard `git config` machinery.
 //!
