@@ -1,5 +1,10 @@
 image: bradqwood/rust-build-docker:1.1.1
 
+stages:
+  - lint
+  - test
+  - publish
+
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
   PATH: "${PATH}:${CARGO_HOME}/bin"
@@ -12,30 +17,21 @@ cache:
 before_script:
   - rustup --version
 
-stages:
-  - lint
-  - unit test
-  - integration test
-  - publish
 
 lint:
   stage: lint
   script:
     - just lint
 
-unit test:
-  stage: unit test
+test:
+  stage: test
   script:
-    - just clean
-    - just unit-test
-    - just cov
+    - just tarp
+  artifacts:
+    expose_as: coverage report
+    paths: [tarp/tarpaulin-report.html]
 
-integration test:
-  stage: integration test
-  script:
-    - just int-test
-
-cargo publish:
+publish:
   stage: publish
   only:
     - /^(\d+\.)?(\d+\.)?(\*|\d+)$/

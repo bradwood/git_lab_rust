@@ -45,3 +45,6 @@ cov:
 	kcov --exclude-pattern=/.cargo,/usr/lib,/cargo --verify target/cov $TARGET --test-threads=1
 	COVERAGE=$(grep -Po 'covered":.*?[^\\]"' target/cov/index.js | grep "[0-9]*\.[0-9]" -o)
 	echo "Coverage:" $COVERAGE
+
+tarp:
+	cargo tarpaulin --locked --output-dir tarp -o Html --ignore-tests -- --test-threads=1
