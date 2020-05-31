@@ -22,6 +22,10 @@ pub use gitlab::api::projects::BuildGitStrategy;
 
 use crate::config::Config;
 
+
+
+
+
 /// Misc converter functions used to convert string args to Gitlab types
 pub mod converter {
     use super::*;
@@ -31,7 +35,7 @@ pub mod converter {
             "continuous" => Ok(AutoDevOpsDeployStrategy::Continuous),
             "manual" => Ok(AutoDevOpsDeployStrategy::Manual),
             "timed_incremental" => Ok(AutoDevOpsDeployStrategy::TimedIncremental),
-            _ => Err(anyhow!("Incorrect state"))
+            _ => Err(anyhow!("Incorrect deployment strategy"))
         }
     }
 
@@ -75,7 +79,7 @@ pub mod converter {
             "private" => Ok(FeatureAccessLevelPublic::Private),
             "enabled" => Ok(FeatureAccessLevelPublic::Enabled),
             "public" => Ok(FeatureAccessLevelPublic::Public),
-            _ => Err(anyhow!("Incorrect visibility level"))
+            _ => Err(anyhow!("Incorrect public feature access level"))
         }
     }
     pub fn feature_access_level_from_str(s: &str) -> Result<FeatureAccessLevel> {
@@ -83,7 +87,7 @@ pub mod converter {
             "disabled" => Ok(FeatureAccessLevel::Disabled),
             "private" => Ok(FeatureAccessLevel::Private),
             "enabled" => Ok(FeatureAccessLevel::Enabled),
-            _ => Err(anyhow!("Incorrect Feature Access level"))
+            _ => Err(anyhow!("Incorrect feature access level"))
         }
     }
 }
@@ -108,4 +112,63 @@ pub fn new(config: &Config) -> Result<Box<Client>> {
             .with_context(|| format!("Failed to make secure (https) connection to {}", host))?,
     };
     Ok(Box::new(client))
+}
+
+#[cfg(test)]
+mod gitlab_converter_unit_tests {
+    use anyhow::Result;
+    use rstest::*;
+    use super::*;
+    use super::converter::*;
+
+    #[rstest(
+        s, t, f,
+        case("continuous", AutoDevOpsDeployStrategy::Continuous, &auto_devops_deploy_strategy_from_str),
+        case("manual", AutoDevOpsDeployStrategy::Manual, &auto_devops_deploy_strategy_from_str),
+        case("timed_incremental", AutoDevOpsDeployStrategy::TimedIncremental, &auto_devops_deploy_strategy_from_str),
+
+        case("enabled", EnableState::Enabled, &enable_state_from_str),
+        case("disabled", EnableState::Disabled, &enable_state_from_str),
+
+        case("fetch", BuildGitStrategy::Fetch, &pipeline_git_strategy_from_str),
+        case("clone", BuildGitStrategy::Clone, &pipeline_git_strategy_from_str),
+
+        case("merge", MergeMethod::Merge, &merge_method_from_str),
+        case("rebase-merge", MergeMethod::RebaseMerge, &merge_method_from_str),
+        case("fast-forward", MergeMethod::FastForward, &merge_method_from_str),
+
+        case("public", VisibilityLevel::Public, &visibility_level_from_str),
+        case("internal", VisibilityLevel::Internal, &visibility_level_from_str),
+        case("private", VisibilityLevel::Private, &visibility_level_from_str),
+
+        case("disabled", FeatureAccessLevelPublic::Disabled, &feature_access_level_public_from_str),
+        case("private", FeatureAccessLevelPublic::Private, &feature_access_level_public_from_str),
+        case("enabled", FeatureAccessLevelPublic::Enabled, &feature_access_level_public_from_str),
+        case("public", FeatureAccessLevelPublic::Public, &feature_access_level_public_from_str),
+
+        case("disabled", FeatureAccessLevel::Disabled, &feature_access_level_from_str),
+        case("private", FeatureAccessLevel::Private, &feature_access_level_from_str),
+        case("enabled", FeatureAccessLevel::Enabled, &feature_access_level_from_str),
+    )]
+    fn test_gitlab_converter_from_str_ok<T>(s: &str, t: T, f: &dyn Fn(&str) -> Result<T>)
+    where T: Eq + std::fmt::Debug
+    {
+        assert_eq!(f(s).unwrap(), t)
+    }
+
+    #[rstest(
+        s,  f,
+        case("blah", &auto_devops_deploy_strategy_from_str),
+        case("blah", &enable_state_from_str),
+        case("blah", &pipeline_git_strategy_from_str),
+        case("blah", &merge_method_from_str),
+        case("blah", &visibility_level_from_str),
+        case("blah", &feature_access_level_public_from_str),
+        case("blah", &feature_access_level_from_str),
+    )]
+    fn test_gitlab_converter_from_str_err<T>(s: &str,  f: &dyn Fn(&str) -> Result<T>)
+    where T: Eq + std::fmt::Debug
+    {
+        assert!(f(s).is_err())
+    }
 }
