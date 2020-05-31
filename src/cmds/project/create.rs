@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::gitlab::{
     CreateProject,
+    CreateProjectBuilder,
     Client,
     Query,
 };
@@ -25,12 +26,7 @@ struct Project {
     web_url: String,
 }
 
-pub fn create_project_cmd(
-    args: clap::ArgMatches,
-    gitlabclient: Client,
-) -> Result<()> {
-
-    let mut p = CreateProject::builder();
+pub fn generate_project_builder<'a>(args: &'a clap::ArgMatches, p: &'a mut CreateProjectBuilder<'a>) -> CreateProject<'a> {
 
     // url argument -- validation done by clap.rs
     if args.occurrences_of("import_url") > 0 {
@@ -131,39 +127,39 @@ pub fn create_project_cmd(
     if args.occurrences_of("repo_access_level") > 0 {
         p.repository_access_level(
             feature_access_level_from_str(args.value_of("repo_access_level").unwrap()).unwrap(),
-        );
+            );
     }
     if args.occurrences_of("issues_access_level") > 0 {
         p.issues_access_level(
             feature_access_level_from_str(args.value_of("issues_access_level").unwrap()) .unwrap(),
-        );
+            );
     }
     if args.occurrences_of("forking_access_level") > 0 {
         p.forking_access_level(
             feature_access_level_from_str(args.value_of("forking_access_level").unwrap()).unwrap(),
-        );
+            );
     }
     if args.occurrences_of("mr_access_level") > 0 {
         p.merge_requests_access_level(
             feature_access_level_from_str(args.value_of("mr_access_level").unwrap()).unwrap(),
-        );
+            );
     }
     if args.occurrences_of("builds_access_level") > 0 {
         p.builds_access_level(
             feature_access_level_from_str(args.value_of("builds_access_level").unwrap())
-                .unwrap(),
-        );
+            .unwrap(),
+            );
     }
     if args.occurrences_of("wiki_access_level") > 0 {
         p.wiki_access_level(
             feature_access_level_from_str(args.value_of("wiki_access_level").unwrap()).unwrap(),
-        );
+            );
     }
     if args.occurrences_of("snippets_access_level") > 0 {
         p.snippets_access_level(
             feature_access_level_from_str(args.value_of("snippets_access_level").unwrap())
-                .unwrap(),
-        );
+            .unwrap(),
+            );
     }
 
     // specific conversion to feature_access_level_public enum - unwrap()'s are safe as problems
@@ -171,8 +167,8 @@ pub fn create_project_cmd(
     if args.occurrences_of("pages_access_level") > 0 {
         p.pages_access_level(
             feature_access_level_public_from_str(args.value_of("pages_access_level").unwrap())
-                .unwrap(),
-        );
+            .unwrap(),
+            );
     }
 
     // specific conversion to merge_method enum - unwrap()'s are safe as problems will be caught by clap.rs
@@ -184,8 +180,8 @@ pub fn create_project_cmd(
     if args.occurrences_of("pipeline_git_strategy") > 0 {
         p.build_git_strategy(
             pipeline_git_strategy_from_str(args.value_of("pipeline_git_strategy").unwrap())
-                .unwrap(),
-        );
+            .unwrap(),
+            );
     }
 
     if args.occurrences_of("tags") > 0 {
@@ -195,7 +191,16 @@ pub fn create_project_cmd(
     }
 
     // arg "name" is enforced by clap.rs so unwrap() is safe...
-    let endpoint = p.name(args.value_of("name").unwrap()).build().unwrap();
+    p.name(args.value_of("name").unwrap()).build().unwrap()
+}
+
+pub fn create_project_cmd(
+    args: clap::ArgMatches,
+    gitlabclient: Client,
+) -> Result<()> {
+
+    let mut p = CreateProject::builder();
+    let endpoint = generate_project_builder(&args, &mut p);
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
@@ -219,15 +224,105 @@ mod project_create_unit_tests {
     // use std::path::Path;
 
     // use anyhow::anyhow;
-    // use clap::SubCommand as ClapSubCommand;
+    use clap::SubCommand as ClapSubCommand;
     // use gitlab::types::*;
     // use serde::de::DeserializeOwned;
 
     // use crate::gitlab::Project;
-    // use crate::subcommand::SubCommand;
-    // use crate::cmds::project;
+    use crate::subcommand::SubCommand;
+    use crate::cmds::project;
 
-    // use super::*;
+    use super::*;
+
+    #[test]
+    fn test_generate_project_builder() {
+        // GIVEN
+        let mut p = CreateProject::builder();
+
+        let p_cmd = project::Project{
+            clap_cmd: ClapSubCommand::with_name("project")
+        };
+
+        let args = p_cmd
+            .gen_clap_command()
+            .get_matches_from(vec![
+                "project", "create", "project_name",
+                "-v", "private",
+                "--wiki_access_level", "disabled",
+                "--disable_wiki",
+            ]);
+        let matches = args.subcommand_matches("create");
+
+        // WHEN
+        let endpoint = generate_project_builder(&matches.unwrap(), &mut p);
+
+        // THEN
+        let enpoint_debug = r###"CreateProject {
+    name_and_path: Name {
+        name: "project_name",
+    },
+    namespace_id: None,
+    default_branch: None,
+    description: None,
+    issues_access_level: None,
+    repository_access_level: None,
+    merge_requests_access_level: None,
+    forking_access_level: None,
+    builds_access_level: None,
+    wiki_access_level: Some(
+        Disabled,
+    ),
+    snippets_access_level: None,
+    pages_access_level: None,
+    emails_disabled: None,
+    resolve_outdated_diff_discussions: None,
+    container_registry_enabled: None,
+    container_expiration_policy_attributes: None,
+    shared_runners_enabled: None,
+    visibility: Some(
+        Private,
+    ),
+    import_url: None,
+    public_builds: None,
+    only_allow_merge_if_pipeline_succeeds: None,
+    only_allow_merge_if_all_discussions_are_resolved: None,
+    merge_method: None,
+    autoclose_referenced_issues: None,
+    remove_source_branch_after_merge: None,
+    lfs_enabled: None,
+    request_access_enabled: None,
+    tag_list: {},
+    printing_merge_request_link_enabled: None,
+    build_git_strategy: None,
+    build_timeout: None,
+    auto_cancel_pending_pipelines: None,
+    build_coverage_regex: None,
+    ci_config_path: None,
+    auto_devops_enabled: None,
+    auto_devops_deploy_strategy: None,
+    repository_storage: None,
+    approvals_before_merge: None,
+    external_authorization_classification_label: None,
+    mirror: None,
+    mirror_trigger_builds: None,
+    initialize_with_readme: None,
+    template_name: None,
+    template_project_id: None,
+    use_custom_template: None,
+    group_with_project_templates_id: None,
+    packages_enabled: None,
+    issues_enabled: None,
+    merge_requests_enabled: None,
+    jobs_enabled: None,
+    wiki_enabled: Some(
+        false,
+    ),
+    snippets_enabled: None,
+}"###;
+
+    assert_eq!(enpoint_debug, format!("{:#?}", endpoint))
+    }
+
 
     // struct GitlabWithMockProject {
     //     project: Result<Project>,
