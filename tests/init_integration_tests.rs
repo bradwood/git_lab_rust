@@ -67,7 +67,7 @@ mod init_integration_tests {
     }
 
     #[test]
-    fn test_init_hompe_dir_from_repo_dir() -> Result<()> {
+    fn test_init_home_dir_from_repo_dir() -> Result<()> {
         initialise();
         cd_repo();
         let cmd_str = format!("{} {}", cargo_bin("git-lab").as_path().to_str().unwrap(), "init --user");
