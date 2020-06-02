@@ -21,6 +21,8 @@ lint:
   stage: lint
   script:
     - just lint
+  only:
+    - branches
 
 test:
   stage: test
@@ -29,6 +31,8 @@ test:
   artifacts:
     expose_as: coverage report
     paths: [tarp/tarpaulin-report.html]
+  only:
+    - branches
 
 publish:
   stage: publish
