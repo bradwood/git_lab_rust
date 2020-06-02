@@ -11,6 +11,7 @@ pub use gitlab::Project;
 pub use gitlab::Gitlab as Client;
 pub use gitlab::api::Query;
 pub use gitlab::api::projects::CreateProject;
+pub use gitlab::api::projects::CreateProjectBuilder;
 
 pub use gitlab::api::common::EnableState;
 pub use gitlab::api::common::VisibilityLevel;
@@ -21,10 +22,6 @@ pub use gitlab::api::projects::MergeMethod;
 pub use gitlab::api::projects::BuildGitStrategy;
 
 use crate::config::Config;
-
-
-
-
 
 /// Misc converter functions used to convert string args to Gitlab types
 pub mod converter {

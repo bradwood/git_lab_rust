@@ -1,0 +1,15 @@
+[CONFIG_ONLY]
+locked = true
+ignore-tests = true
+
+args = ["config_unit_tests", "--test-threads=1"]
+
+[EVERYTHING_ELSE]
+locked = true
+ignore-tests = true
+
+args = ["--skip", "config_unit_tests", "--test-threads=1"]
+
+[report]
+output-dir = "tarp"
+out = ["Html"]

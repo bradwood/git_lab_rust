@@ -115,6 +115,14 @@ If invoked outside the context of a local repo, the command will fail.",
                             .validator(validator::check_url)
                     )
                     .arg(
+                        clap::Arg::with_name("merge_approval_count")
+                            .long("merge_approval_count")
+                            .takes_value(true)
+                            .help("Sets how many merge request approvals are required before merge")
+                            .empty_values(false)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
                         clap::Arg::with_name("build_timeout")
                             .long("build_timeout")
                             .takes_value(true)
@@ -218,6 +226,11 @@ If invoked outside the context of a local repo, the command will fail.",
                             .possible_values(&["disabled", "private", "enabled", "public"])
                     )
                     .arg(
+                        clap::Arg::with_name("disable_emails")
+                            .long("disable_emails")
+                            .help("Disable email alerts")
+                    )
+                    .arg(
                         clap::Arg::with_name("enable_container_registry")
                             .long("enable_container_registry")
                             .help("Enables the project's container registry")
@@ -241,14 +254,18 @@ If invoked outside the context of a local repo, the command will fail.",
                         clap::Arg::with_name("auto_devops_deploy_strategy")
                             .long("auto_devops_deploy_strategy")
                             .takes_value(true)
-                            .empty_values(false)
                             .possible_values(&["continuous", "manual", "timed_incremental"])
-                            .requires("auto_devops_enabled")
+                            .requires("enable_auto_devops")
                     )
                     .arg(
                         clap::Arg::with_name("enable_auto_devops")
                             .long("enable_auto_devops")
                             .help("Enables auto-devops feature")
+                    )
+                    .arg(
+                        clap::Arg::with_name("remove_source_branch_after_merge")
+                            .long("remove_source_branch_after_merge")
+                            .help("Deletes branch after it is merged")
                     )
                     .arg(
                         clap::Arg::with_name("enable_shared_runners")
@@ -265,19 +282,19 @@ If invoked outside the context of a local repo, the command will fail.",
                             .empty_values(false)
                             .require_delimiter(true)
                     )
+                    // .arg(
+                    //     clap::Arg::with_name("container_expiration_policy")
+                    //         .long("container_expiration_policy")
+                    //         .help("Sets container expiration policy attributes. See GitLab docs for details.")
+                    //         .takes_value(true)
+                    //         .multiple(true)
+                    //         .requires("enable_container_registry")
+                    //         .empty_values(false)
+                    //         .require_delimiter(true)
+                    // )
                     .arg(
-                        clap::Arg::with_name("container_expiration_policy")
-                            .long("container_expiration_policy")
-                            .help("Sets container expiration policy attributes. See GitLab docs for details.")
-                            .takes_value(true)
-                            .multiple(true)
-                            .requires("enable_container_registry")
-                            .empty_values(false)
-                            .require_delimiter(true)
-                    )
-                    .arg(
-                        clap::Arg::with_name("public_builds")
-                            .long("public_builds")
+                        clap::Arg::with_name("enable_public_builds")
+                            .long("enable_public_builds")
                             .help("Makes builds publically viewable")
                     )
                     .arg(
@@ -306,6 +323,27 @@ If invoked outside the context of a local repo, the command will fail.",
                             .help("Enables the automatic cancellation of pipelines that are superseded by newer ones")
                     )
                     .arg(
+                        clap::Arg::with_name("enable_packages")
+                            .long("enable_packages")
+                            .help("Enables packages feature in project")
+                    )
+                    .arg(
+                        clap::Arg::with_name("initialise_with_readme")
+                            .long("initialise_with_readme")
+                            .help("Creates an empty README.md")
+                    )
+                    .arg(
+                        clap::Arg::with_name("enable_mirror")
+                            .long("enable_mirror")
+                            .help("Enables pull mirroring for the project")
+                    )
+                    .arg(
+                        clap::Arg::with_name("mirror_triggers_builds")
+                            .long("mirror_triggers_builds")
+                            .help("Enables builds when mirroring occurs")
+                            .requires("enable_mirror")
+                    )
+                    .arg(
                         clap::Arg::with_name("merge_method")
                             .long("merge_method")
                             .short("m")
@@ -330,7 +368,6 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
             )
     }
 
-    // How to test? FIXME Use a mock over IfGitLabNew?
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
 
         trace!("Config: {:?}", config);
