@@ -586,7 +586,8 @@ dependencies = [
 [[package]]
 name = "gitlab"
 version = "0.1300.0"
-source = "git+https://gitlab.kitware.com/utils/rust-gitlab.git#b830edf28eba5f5e0449e402ed11b86c98586862"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5a5b43f590bd5e98278dea9a01b594e54c9afaa1b89c3672621fc903cac91ea"
 dependencies = [
  "base64",
  "bytes",

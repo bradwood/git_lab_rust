@@ -18,8 +18,8 @@ license = "MIT"
 anyhow = "1.0"
 dialoguer = "0.5"
 git2 = "0.13"
-gitlab = { git = "https://gitlab.kitware.com/utils/rust-gitlab.git" }
-# gitlab = "0.1210"
+# gitlab = { git = "https://gitlab.kitware.com/utils/rust-gitlab.git" }
+gitlab = "0.1300"
 lazy_static = "1.4"
 log = "0.4"
 loggerv = "0.7"
