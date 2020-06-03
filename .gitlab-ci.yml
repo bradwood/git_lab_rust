@@ -1,7 +1,7 @@
 image: bradqwood/rust-build-docker:1.1.1
 
 stages:
-  # - lint
+  - lint
   - test
   - publish
 
@@ -16,19 +16,14 @@ cache:
 before_script:
   - rustup --version
 
-test comms:
-  stage: test
-  script:
-    - curl https://crates.io/
-
-.lint:
+lint:
   stage: lint
   script:
     - just lint
   only:
     - branches
 
-.test:
+test:
   stage: test
   script:
     - just tarp
@@ -40,11 +35,11 @@ test comms:
 
 publish:
   stage: publish
-  # only:
-  #   - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
-  # except:
-  #   - branches
+  only:
+    - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
+  except:
+    - branches
   script:
     # check that the git tag semver string is the same as the string in Cargo.toml
     - test $(grep version Cargo.toml| head -1 | cut -f3 -d\ ) = \"$CI_COMMIT_TAG\"
-    - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty -vv
+    - cargo publish --token $CRATES_DOT_IO_KEY
