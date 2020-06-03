@@ -1,9 +1,9 @@
 image: bradqwood/rust-build-docker:1.1.1
 
 stages:
-  - lint
+  # - lint
   - test
-  - publish
+  # - publish
 
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
@@ -16,15 +16,19 @@ cache:
 before_script:
   - rustup --version
 
+test comms:
+  stage: test
+  script:
+    - curl https://crates.io/
 
-lint:
+.lint:
   stage: lint
   script:
     - just lint
   only:
     - branches
 
-test:
+.test:
   stage: test
   script:
     - just tarp
@@ -34,7 +38,7 @@ test:
   only:
     - branches
 
-publish:
+.publish:
   stage: publish
   only:
     - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
