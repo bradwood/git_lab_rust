@@ -1,10 +1,13 @@
-use git2::Config as GitConfig;
-use git2::ConfigLevel;
-use git2::ConfigLevel::{Global, Local, System, XDG};
-use git2::Repository;
 use std::env;
+use std::fmt;
 use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::{anyhow, Context, Result};
+use git2::Config as GitConfig;
+use git2::ConfigLevel::{Global, Local, System, XDG};
+use git2::ConfigLevel;
+use git2::Repository;
 
 use crate::utils::find_git_root;
 
@@ -26,6 +29,32 @@ pub enum UserGitConfigLevel {
     Global,
 }
 
+/// This enum specifies the two different output formats supported
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum OutputFormat {
+    Text,
+    JSON,
+}
+
+impl FromStr for OutputFormat {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "JSON" => Ok(OutputFormat::JSON),
+            "TEXT" => Ok(OutputFormat::Text),
+            _ => Err(anyhow!("Bad output format: {}", s)),
+        }
+    }
+}
+
+impl fmt::Display for OutputFormat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// This struct holds the config data required to talk to a GitLab server as well as other
 /// configuration data, including the path to the local repo (if any).
 ///
@@ -42,6 +71,7 @@ pub struct Config {
     pub token: Option<String>,
     pub host: Option<String>,
     pub tls: Option<bool>,
+    pub format: Option<OutputFormat>,
     pub repo_path: Option<PathBuf>, //convenience param, not saved with ::save()
     pub user_config_type: Option<UserGitConfigLevel>, //convenience param, not saved with ::save()
 }
@@ -94,6 +124,7 @@ fn update_config_from_git(config: &mut Config, git_config: &GitConfig) {
                 entry.value().unwrap().to_uppercase() == "ON" ||
                 entry.value().unwrap().to_uppercase() == "1"
                 ),
+            "gitlab.format" => config.format = entry.value().unwrap().to_string().parse::<OutputFormat>().ok(),
             _ => (),
         };
         trace!(
@@ -124,6 +155,7 @@ where
                 );
             continue
         };
+        if key == "GITLAB_FORMAT" { config.format = value.parse::<OutputFormat>().ok(); continue }
     }
 }
 
@@ -171,6 +203,10 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
         save_config.set_bool("gitlab.tls", config.tls.unwrap())
             .context("Failed to save gitlab.tls to git config.")?;
     }
+    if config.format.is_some() {
+        save_config.set_str("gitlab.format", config.format.as_ref().unwrap().to_string().as_str())
+            .context("Failed to save gitlab.format to git config.")?;
+    }
 
     Ok(())
 }
@@ -179,7 +215,7 @@ impl Config {
 
     /// Create an empty config object.
     fn new() -> Config {
-        Config { token: None, host: None, tls: None, repo_path: None , user_config_type: None}
+        Config { token: None, host: None, tls: None, format: None, repo_path: None , user_config_type: None}
     }
 
     /// Reads the configs from the various GitLab sections in the various git config files and
@@ -382,6 +418,7 @@ mod config_unit_tests {
         assert!(no_local_config.get_string("gitlab.host").is_err());
         assert!(no_local_config.get_string("gitlab.token").is_err());
         assert!(no_local_config.get_bool("gitlab.tls").is_err());
+        assert!(no_local_config.get_string("gitlab.format").is_err());
     }
 
     #[test]
@@ -395,6 +432,7 @@ mod config_unit_tests {
         assert!(empty_local_config.get_string("gitlab.host").is_err());
         assert!(empty_local_config.get_string("gitlab.token").is_err());
         assert!(empty_local_config.get_bool("gitlab.tls").is_err());
+        assert!(empty_local_config.get_string("gitlab.format").is_err());
         reset_repo();
     }
 
@@ -408,6 +446,7 @@ mod config_unit_tests {
         assert!(empty_local_config.get_string("gitlab.host").is_err());
         assert!(empty_local_config.get_string("gitlab.token").is_err());
         assert!(empty_local_config.get_bool("gitlab.tls").is_err());
+        assert!(empty_local_config.get_string("gitlab.format").is_err());
     }
 
     #[test]
@@ -416,15 +455,17 @@ mod config_unit_tests {
         cd_home();
         let repo = Repository::open("repo").unwrap();
         let mut git_config = repo.config().unwrap();
-        git_config.set_str("gitlab.token", "testtoken").unwrap();
         git_config.set_str("gitlab.host", "some.host.name").unwrap();
+        git_config.set_str("gitlab.token", "testtoken").unwrap();
         git_config.set_bool("gitlab.tls", true).unwrap();
+        git_config.set_str("gitlab.format", "json").unwrap();
         cd_repo();
         let nonempty_local_config = maybe_open_local_config();
 
         assert_eq!(nonempty_local_config.get_string("gitlab.token").unwrap(), "testtoken");
         assert_eq!(nonempty_local_config.get_string("gitlab.host").unwrap(), "some.host.name");
         assert!(nonempty_local_config.get_bool("gitlab.tls").unwrap());
+        assert_eq!(nonempty_local_config.get_string("gitlab.format").unwrap(), "json");
         reset_repo();
     }
 
@@ -444,6 +485,7 @@ mod config_unit_tests {
         assert!(config.token.is_none());
         assert!(config.host.is_none());
         assert!(config.tls.is_none());
+        assert!(config.format.is_none());
     }
 
     #[test]
@@ -455,6 +497,7 @@ mod config_unit_tests {
         git_config.set_str("gitlab.token", "testtoken").unwrap();
         git_config.set_str("gitlab.host", "some.host.name").unwrap();
         git_config.set_bool("gitlab.tls", true).unwrap();
+        git_config.set_str("gitlab.format", "json").unwrap();
         let mut config = Config::new();
         cd_repo();
 
@@ -462,6 +505,7 @@ mod config_unit_tests {
 
         assert_eq!(config.token.unwrap(), "testtoken");
         assert_eq!(config.host.unwrap(), "some.host.name");
+        assert_eq!(config.format.unwrap(),OutputFormat::JSON);
         assert!(config.tls.unwrap());
     }
 
@@ -482,12 +526,14 @@ mod config_unit_tests {
         git_config.set_str("gitlab.token", "testtoken").unwrap();
         git_config.set_str("gitlab.host", "some.host.name").unwrap();
         git_config.set_str("gitlab.tls",switch).unwrap();
+        git_config.set_str("gitlab.format", "json").unwrap();
         let mut config = Config::new();
 
         update_config_from_git(&mut config, &git_config);
 
         assert_eq!(config.token.unwrap(), "testtoken");
         assert_eq!(config.host.unwrap(), "some.host.name");
+        assert_eq!(config.format.unwrap(), OutputFormat::JSON);
         assert!(config.tls.unwrap());
     }
 
@@ -511,12 +557,14 @@ mod config_unit_tests {
         git_config.set_str("gitlab.token", "testtoken").unwrap();
         git_config.set_str("gitlab.host", "some.host.name").unwrap();
         git_config.set_str("gitlab.tls",switch).unwrap();
+        git_config.set_str("gitlab.format", "json").unwrap();
         let mut config = Config::new();
 
         update_config_from_git(&mut config, &git_config);
 
         assert_eq!(config.token.unwrap(), "testtoken");
         assert_eq!(config.host.unwrap(), "some.host.name");
+        assert_eq!(config.format.unwrap(), OutputFormat::JSON);
         assert!(!config.tls.unwrap());
     }
 
@@ -577,11 +625,13 @@ mod config_unit_tests {
         env.insert("GITLAB_TOKEN".to_string(), "env_token".to_string());
         env.insert("GITLAB_HOST".to_string(), "env_host".to_string());
         env.insert("GITLAB_TLS".to_string(), "yeS".to_string());
+        env.insert("GITLAB_FORMAT".to_string(), "Json".to_string());
 
         update_config_from_env(&mut conf, env.into_iter());
 
         assert_eq!(conf.token.unwrap(), "env_token");
         assert_eq!(conf.host.unwrap(), "env_host");
+        assert_eq!(conf.format.unwrap(), OutputFormat::JSON);
         assert!(conf.tls.unwrap());
     }
 
@@ -598,6 +648,7 @@ mod config_unit_tests {
             token: Some("brad".to_string()),
             host: Some("bradhost".to_string()),
             tls: Some(false),
+            format: Some(OutputFormat::JSON),
             repo_path: None,
             user_config_type: None
         };
@@ -607,6 +658,7 @@ mod config_unit_tests {
         assert_eq!(git_config.get_string("gitlab.token").unwrap(), "brad");
         assert_eq!(git_config.get_string("gitlab.host").unwrap(), "bradhost");
         assert!(!git_config.get_bool("gitlab.tls").unwrap());
+        assert_eq!(git_config.get_string("gitlab.format").unwrap(), "JSON");
 
         reset_global_config();
         reset_xdg_config();
@@ -625,6 +677,7 @@ mod config_unit_tests {
             token: Some("brad".to_string()),
             host: Some("bradhost".to_string()),
             tls: Some(false),
+            format: Some(OutputFormat::JSON),
             repo_path: None,
             user_config_type: None
         };
@@ -651,6 +704,7 @@ mod config_unit_tests {
             token: Some("brad".to_string()),
             host: None,
             tls: Some(false),
+            format: Some(OutputFormat::JSON),
             repo_path: None,
             user_config_type: None
         };
@@ -679,11 +733,12 @@ mod config_unit_tests {
         cd_repo();
 
         // create an empty config with only repo_path and user_config_type = Global
-        // the below 5 asserts confirm this.
+        // the below asserts confirm this.
         let mut conf = Config::defaults();
         assert!(conf.token.is_none());
         assert!(conf.host.is_none());
         assert!(conf.tls.is_none());
+        assert!(conf.format.is_none());
         assert!(conf.repo_path.as_ref().unwrap().to_str().unwrap().to_string().starts_with("/tmp/")); //TempDir uses /tmp
         assert_eq!(conf.user_config_type, Some(UserGitConfigLevel::Global));
 
@@ -691,6 +746,7 @@ mod config_unit_tests {
         conf.host = Some("testhost".to_string());
         conf.token = Some("test-token".to_string());
         conf.tls = None;
+        conf.format = Some(OutputFormat::JSON);
 
         // now lets try to save to the Local repo config
         conf.save(GitConfigSaveableLevel::Repo).unwrap();
@@ -700,6 +756,7 @@ mod config_unit_tests {
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token");
         assert!(single_level.get_entry("gitlab.tls").is_err()); // it should error out looking this up
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
 
         // lets check Global to make sure it's not there
         single_level = get_level_config(&git_config, Global);
@@ -720,11 +777,12 @@ mod config_unit_tests {
         let git_config = repo.config().unwrap();
 
         // create an empty in-house config with only user_config_type = Global
-        // the below 5 asserts confirm this.
+        // the below asserts confirm this.
         let mut conf = Config::defaults();
         assert!(conf.token.is_none());
         assert!(conf.host.is_none());
         assert!(conf.tls.is_none());
+        assert!(conf.format.is_none());
         assert!(conf.repo_path.is_none()); // not set unless we're in a repo
         assert_eq!(conf.user_config_type, Some(UserGitConfigLevel::Global));
 
@@ -732,6 +790,7 @@ mod config_unit_tests {
         conf.host = Some("testhost-globalxxx".to_string());
         conf.token = Some("test-token-globalxxx".to_string());
         conf.tls = None;
+        conf.format = Some(OutputFormat::JSON);
 
         conf.save(GitConfigSaveableLevel::User).unwrap();
 
@@ -740,6 +799,7 @@ mod config_unit_tests {
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost-globalxxx");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token-globalxxx");
         assert!(single_level.get_entry("gitlab.tls").is_err()); // it should error out looking this up
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
 
         // lets check Local to make sure it's not there
         single_level = get_level_config(&git_config, Local);
@@ -759,12 +819,13 @@ mod config_unit_tests {
         let git_config = repo.config().unwrap();
 
         // create an empty in-house config with only repo_path and user_config_type = Global
-        // the below 5 asserts confirm this.
+        // the below asserts confirm this.
         let mut conf = Config::defaults();
         println!("{:#?}", &conf);
         assert!(conf.token.is_none());
         assert!(conf.host.is_none());
         assert!(conf.tls.is_none());
+        assert!(conf.format.is_none());
         assert!(conf.repo_path.is_none()); // not set unless we're in a repo
         assert_eq!(conf.user_config_type, Some(UserGitConfigLevel::XDG));
 
@@ -772,6 +833,7 @@ mod config_unit_tests {
         conf.host = Some("testhost-xdg".to_string());
         conf.token = Some("test-token-xdg".to_string());
         conf.tls = None;
+        conf.format = Some(OutputFormat::JSON);
 
         conf.save(GitConfigSaveableLevel::User).unwrap();
 
@@ -779,6 +841,7 @@ mod config_unit_tests {
         let mut single_level = get_level_config(&git_config, XDG);
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost-xdg");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token-xdg");
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
 
         // lets check Local to make sure it's not there
         single_level = get_level_config(&git_config, Local);
@@ -801,12 +864,14 @@ mod config_unit_tests {
         let mut config = repo.config().unwrap();
         config.set_str("gitlab.token", "testtoken").unwrap();
         config.set_str("gitlab.host", "some.host.name").unwrap();
+        config.set_str("gitlab.format", "json").unwrap();
         config.set_bool("gitlab.tls", true).unwrap();
 
         let conf = Config::defaults();
 
         assert_eq!(conf.token.unwrap(), "testtoken");
         assert_eq!(conf.host.unwrap(), "some.host.name");
+        assert_eq!(conf.format.unwrap(), OutputFormat::JSON);
         assert!(conf.tls.unwrap());
     }
 }
