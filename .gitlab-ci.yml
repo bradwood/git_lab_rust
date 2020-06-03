@@ -16,7 +16,6 @@ cache:
 before_script:
   - rustup --version
 
-
 lint:
   stage: lint
   script:
@@ -43,4 +42,4 @@ publish:
   script:
     # check that the git tag semver string is the same as the string in Cargo.toml
     - test $(grep version Cargo.toml| head -1 | cut -f3 -d\ ) = \"$CI_COMMIT_TAG\"
-    - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty -vv
+    - cargo publish --token $CRATES_DOT_IO_KEY
