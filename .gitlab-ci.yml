@@ -40,8 +40,8 @@ test comms:
 
 publish:
   stage: publish
-  only:
-    - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
+  # only:
+  #   - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
   # except:
   #   - branches
   script:
