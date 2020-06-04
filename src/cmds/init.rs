@@ -2,7 +2,7 @@ use crate::config;
 use crate::config::GitConfigSaveableLevel::{Repo, User};
 use crate::subcommand;
 use anyhow::{Context, Result};
-use dialoguer::{Input, PasswordInput};
+use dialoguer::{Input, PasswordInput, Select};
 
 /// This implements the `init` command. It initialises the GitLab-specific config data needed to
 /// communicate with the server. See [`config`] for more details.
@@ -28,6 +28,7 @@ illustrated in the examples below:
     git config --local --add gitlab.host my.gitlab.host.com
     git config --local --add gitlab.token PERSONAL_ACCESS_TOKEN
     git config --global --add gitlab.tls true
+    git config --global --add gitlab.format json
 
 Initialisation via `git lab init` is not mandatory. Users preferring to set configuration \
 parameters by environment variables can do so. The variables that can be set are shown below. Note \
@@ -36,6 +37,7 @@ that setting these will override the data set in any git config file.
     GITLAB_HOST
     GITLAB_TOKEN
     GITLAB_TLS
+    GITLAB_FORMAT
 ")
 
             .arg(
@@ -71,6 +73,22 @@ and local) then you must directly edit the relevant files or invoke git-config(1
             .with_prompt("TLS enabled")
             .default(config.tls.unwrap_or(true))
             .interact().ok();
+
+        let format_options = &["Text", "JSON"];
+        let format_choice = Select::new()
+            .with_prompt("Output format")
+            .default(
+                format_options
+                .iter()
+                .position(
+                    |&x| x == config.format.as_ref().unwrap_or(&config::OutputFormat::Text).to_string()
+                )
+                .unwrap()
+            )
+            .items(&format_options[..])
+            .interact().unwrap();
+
+        config.format = format_options[format_choice].parse().ok();
 
         // Write to appropriate config file
         if config.repo_path.is_none() || args.is_present("user") {
