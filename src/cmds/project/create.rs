@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::value_t_or_exit;
 use serde::Deserialize;
 
@@ -9,7 +9,9 @@ use crate::gitlab::converter::{
     feature_access_level_public_from_str, merge_method_from_str, pipeline_git_strategy_from_str,
     visibility_level_from_str,
 };
-use crate::gitlab::{Client, CreateProject, CreateProjectBuilder, Query};
+use crate::config;
+use crate::config::OutputFormat;
+use crate::gitlab::{api, Client, CreateProject, CreateProjectBuilder, Query};
 
 #[derive(Debug, Deserialize)]
 struct Project {
@@ -145,22 +147,34 @@ pub fn generate_project_builder<'a>(
     p.build().unwrap()
 }
 
-pub fn create_project_cmd(args: clap::ArgMatches, gitlabclient: Client) -> Result<()> {
+pub fn create_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = CreateProject::builder();
     let endpoint = generate_project_builder(&args, &mut p);
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
 
-    // TODO: Consider changing return value to Result<serde_json::Value> to get raw json.
-    // TODO: fix unwrap() to check errors
-    let project: Project = endpoint
-        .query(&gitlabclient)
-        .context("Failed to create project - check for name or path clashes on the server")?;
+    match config.format {
+        Some(OutputFormat::JSON) => {
+            let raw_json  = api::raw(endpoint)
+                .query(&gitlabclient)
+                .context("Fail")?;
 
-    println!("Project id: {}", project.id);
-    println!("Project URL: {}", project.web_url);
-    Ok(())
+            println!("{}", String::from_utf8(raw_json).unwrap());
+            Ok(())
+        },
+
+        Some(OutputFormat::Text) => {
+            let project: Project = endpoint
+                .query(&gitlabclient)
+                .context("Failed to create project - check for name or path clashes on the server")?;
+
+            println!("Project id: {}", project.id);
+            println!("Project URL: {}", project.web_url);
+            Ok(())
+        },
+        _ => Err(anyhow!("Bad output format in config")),
+    }
 }
 
 #[cfg(test)]

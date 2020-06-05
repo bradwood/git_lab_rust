@@ -5,7 +5,6 @@ use anyhow::Context;
 
 use crate::config;
 use crate::gitlab;
-// use crate::gitlab::IfGitLabNew;
 use crate::subcommand;
 use crate::utils::validator;
 
@@ -376,7 +375,7 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
         let gitlabclient = gitlab::new(&config).context("Could not create GitLab client connection.")?;
 
         match args.subcommand() {
-            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), *gitlabclient)?,
+            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), config,  *gitlabclient)?,
             _ => unreachable!(),
         }
 
