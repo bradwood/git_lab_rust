@@ -8,13 +8,15 @@
 //! # Features
 //!
 //! The tool is designed to work as a custom command to the vanilla `git` cli command. Current
-//! feature include:
+//! functions include:
 //! * `init` -- initialise credentials aganst a remote GitLab server
 //! * `project` -- interact with GitLab projects
 //!     * `project create` -- create project
 //!     * `project attach` -- associate a local repo with a project -- still WIP
 //!
-//! `git-lab` by default stores it's config using standard `git config` machinery.
+//! It has the following features:
+//! * config stored using standard `git config` machinery
+//! * JSON output in addition to plain text to allow for parsing with tools like `jq`.
 //!
 //! # Installation
 //!
