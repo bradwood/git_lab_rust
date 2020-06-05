@@ -23,11 +23,16 @@ mod init_integration_tests {
         p.send_line("test-gitlab-token")?;
         p.exp_regex("TLS enabled \\[.*\\]:")?;
         p.send_line("true")?;
+        p.exp_string("Output format:")?;
+        p.exp_string("> Text")?;
+        p.exp_string("  JSON")?;
+        p.send_line("")?;
         p.exp_eof()?;
 
         let git_config = GitConfig::open(&GitConfig::find_xdg().unwrap()).unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();
@@ -50,6 +55,10 @@ mod init_integration_tests {
         p.send_line("test-gitlab-token")?;
         p.exp_regex("TLS enabled \\[.*\\]:")?;
         p.send_line("true")?;
+        p.exp_string("Output format:")?;
+        p.exp_string("> Text")?;
+        p.exp_string("  JSON")?;
+        p.send_line("")?;
         p.exp_eof()?;
 
         let repo_path = HOME.child("repo");
@@ -57,6 +66,7 @@ mod init_integration_tests {
         let git_config = repo.config().unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();
@@ -79,11 +89,16 @@ mod init_integration_tests {
         p.send_line("test-gitlab-token")?;
         p.exp_regex("TLS enabled \\[.*\\]:")?;
         p.send_line("true")?;
+        p.exp_string("Output format:")?;
+        p.exp_string("> Text")?;
+        p.exp_string("  JSON")?;
+        p.send_line("")?;
         p.exp_eof()?;
 
         let git_config = GitConfig::open(&GitConfig::find_xdg().unwrap()).unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();

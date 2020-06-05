@@ -9,6 +9,7 @@ use anyhow::{Context, Result, anyhow};
 pub use gitlab::Project;
 
 pub use gitlab::Gitlab as Client;
+pub use gitlab::api as api;
 pub use gitlab::api::Query;
 pub use gitlab::api::projects::CreateProject;
 pub use gitlab::api::projects::CreateProjectBuilder;

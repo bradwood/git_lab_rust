@@ -1,6 +1,6 @@
 [package]
 name = "git_lab_cli"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
 description = "A custom git command for interacting with a GitLab server"
@@ -18,7 +18,6 @@ license = "MIT"
 anyhow = "1.0"
 dialoguer = "0.5"
 git2 = "0.13"
-# gitlab = { git = "https://gitlab.kitware.com/utils/rust-gitlab.git" }
 gitlab = "0.1300"
 lazy_static = "1.4"
 log = "0.4"
