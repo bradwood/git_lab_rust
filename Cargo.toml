@@ -10,6 +10,8 @@ homepage = "https://gitlab.com/bradwood/git-lab-rust"
 keywords = ["git", "Gitlab", "cli"]
 categories = ["development-tools", "command-line-utilities"]
 license = "MIT"
+# TODO: check if the below is needed in CI to source .graphql files
+# include = ["src/**/*", "*.toml", "README.md" ]
 
 # [badges]
 # gitlab = { repository = "bradwood/git-lab-rust" }

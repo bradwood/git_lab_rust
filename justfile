@@ -13,6 +13,9 @@ lint:
 build:
 	cargo build
 
+graphql:
+	graphql-client introspect-schema https://gitlab.com/api/graphql > src/graphql/schema.json
+
 check:
 	cargo check
 
