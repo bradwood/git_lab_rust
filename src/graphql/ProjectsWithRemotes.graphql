@@ -1,4 +1,4 @@
-query SearchForGitURLs($search_str: String!) {
+query ProjectsWithRemotes($search_str: String!) {
   projects(search: $search_str) {
     nodes {
       id

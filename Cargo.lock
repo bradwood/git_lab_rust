@@ -571,6 +571,7 @@ dependencies = [
  "dialoguer",
  "git2",
  "gitlab",
+ "graphql_client",
  "lazy_static",
  "log",
  "loggerv",
