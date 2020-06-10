@@ -1,4 +1,4 @@
-image: bradqwood/rust-build-docker:1.1.1
+image: bradqwood/rust-build-docker:1.2.0
 
 stages:
   - lint

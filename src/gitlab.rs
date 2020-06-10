@@ -1,6 +1,7 @@
-//! This module inplements a thin shim over the 3rd party GitLab API where needed. As a result we
-//! don't unit-test the shim code, and therefore try to keep as much logic out of this as possible,
-//! in order to keep the shim as thin as possible.
+//! This module inplements a thin shim over the 3rd party GitLab API where needed.
+//!
+//! As a result we don't unit-test the shim code, and therefore try to keep as much logic out of
+//! this as possible, in order to keep the shim as thin as possible.
 //!
 //! Where possible it will just re-export types from the 3rd party library when nothing special
 //! needs to be abstracted.

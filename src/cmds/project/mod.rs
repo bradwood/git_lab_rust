@@ -1,4 +1,5 @@
 mod create;
+mod attach;
 
 use anyhow::Result;
 use anyhow::Context;
@@ -27,14 +28,6 @@ impl subcommand::SubCommand for Project<'_> {
                     .about("Attaches a GitLab project to a local repo")
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
-                        clap::Arg::with_name("name")
-                            .short("n")
-                            .long("name")
-                            .help("Project name to attach")
-                            .empty_values(false)
-                            .takes_value(true),
-                    )
-                    .arg(
                         clap::Arg::with_name("id")
                             .short("p")
                             .long("project_id")
@@ -46,12 +39,11 @@ impl subcommand::SubCommand for Project<'_> {
                     .after_help(
 "Attaching to a project makes a permanent configuration change to the local repo using standard \
 git-config(1) machinery to associate a GitLab project to a local repo. Subsequent commands that are \
-invoked in a project context will then use the attached project's identifier when they are invoked.\
+invoked in a project context can then use the attached project's identifier when they are invoked.\
 \n
-If neither the project id nor name is passed, this command will attempt to infer which project to \
-attach to by checking if a git remote is configured at the the GitLab host. If one is, it will \
-attempt to attach to it.\
-
+If the project ID is passed it will be attached without verification against the GitLab server; \
+if not, the command will try to infer which project to attach to by checking if a git remote is \
+configured at the the GitLab host. If one is it will attempt to attach to it.\
 \n
 If invoked outside the context of a local repo, the command will fail.",
                     ),
@@ -375,7 +367,8 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
         let gitlabclient = gitlab::new(&config).context("Could not create GitLab client connection.")?;
 
         match args.subcommand() {
-            ("create", Some(create_args)) => create::create_project_cmd(create_args.clone(), config,  *gitlabclient)?,
+            ("create", Some(a)) => create::create_project_cmd(a.clone(), config, *gitlabclient)?,
+            ("attach", Some(a)) => attach::attach_project_cmd(a.clone(), config, *gitlabclient)?,
             _ => unreachable!(),
         }
 

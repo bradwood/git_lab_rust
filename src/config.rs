@@ -1,4 +1,5 @@
 use std::env;
+use std::convert::TryFrom;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -62,7 +63,7 @@ impl fmt::Display for OutputFormat {
 ///  * `/etc/gitconfig` --- the __system__ config
 ///  * `$XDG_CONFIG_HOME/git/config` --- the __XDG__ config
 ///  * `$HOME/.gitconfig` --- the __global__ config
-///  * `$GIT_DIR/.git/confg` --- the repo-specific or __local__ config
+///  * `$GIT_DIR/.git/config` --- the repo-specific or __local__ config
 ///  * The environment variables `GITLAB_HOST`, `GITLAB_TOKEN` and `GITLAB_TLS`
 ///
 /// Override priority increases from top to bottom.
@@ -74,6 +75,7 @@ pub struct Config {
     pub format: Option<OutputFormat>,
     pub repo_path: Option<PathBuf>, //convenience param, not saved with ::save()
     pub user_config_type: Option<UserGitConfigLevel>, //convenience param, not saved with ::save()
+    pub projectid: Option<u64>, //set with project attach command
 }
 
 /// Open System, XDG and Global multi-level config or return empty config.
@@ -93,7 +95,6 @@ fn maybe_open_multilevel_config() -> GitConfig {
 /// Return the path to the local git repo if found.
 fn maybe_get_local_repo() -> Option<PathBuf> {
     let cwd = env::current_dir().ok()?;
-    trace!("Found current directory");
     find_git_root(&cwd)
 }
 
@@ -125,6 +126,7 @@ fn update_config_from_git(config: &mut Config, git_config: &GitConfig) {
                 entry.value().unwrap().to_uppercase() == "1"
                 ),
             "gitlab.format" => config.format = entry.value().unwrap().to_string().parse::<OutputFormat>().ok(),
+            "gitlab.projectid" => config.projectid = Some(entry.value().unwrap().parse::<u64>().unwrap()),
             _ => (),
         };
         trace!(
@@ -155,7 +157,8 @@ where
                 );
             continue
         };
-        if key == "GITLAB_FORMAT" { config.format = value.parse::<OutputFormat>().ok(); continue }
+        if key == "GITLAB_FORMAT" { config.format = value.parse::<OutputFormat>().ok(); continue };
+        if key == "GITLAB_PROJECTID" { config.projectid = value.parse::<u64>().ok(); continue };
     }
 }
 
@@ -203,9 +206,15 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
         save_config.set_bool("gitlab.tls", config.tls.unwrap())
             .context("Failed to save gitlab.tls to git config.")?;
     }
+
     if config.format.is_some() {
         save_config.set_str("gitlab.format", config.format.as_ref().unwrap().to_string().as_str())
             .context("Failed to save gitlab.format to git config.")?;
+    }
+
+    if config.projectid.is_some() {
+        save_config.set_i64("gitlab.projectid", i64::try_from(config.projectid.unwrap()).unwrap())
+            .context("Failed to save gitlab.projectid to git config.")?;
     }
 
     Ok(())
@@ -215,7 +224,15 @@ impl Config {
 
     /// Create an empty config object.
     fn new() -> Config {
-        Config { token: None, host: None, tls: None, format: None, repo_path: None , user_config_type: None}
+        Config {
+            token: None,
+            host: None,
+            tls: None,
+            format: None,
+            projectid: None,
+            repo_path: None,
+            user_config_type: None,
+        }
     }
 
     /// Reads the configs from the various GitLab sections in the various git config files and
@@ -649,6 +666,7 @@ mod config_unit_tests {
             host: Some("bradhost".to_string()),
             tls: Some(false),
             format: Some(OutputFormat::JSON),
+            projectid: Some(42),
             repo_path: None,
             user_config_type: None
         };
@@ -657,6 +675,7 @@ mod config_unit_tests {
 
         assert_eq!(git_config.get_string("gitlab.token").unwrap(), "brad");
         assert_eq!(git_config.get_string("gitlab.host").unwrap(), "bradhost");
+        assert_eq!(git_config.get_string("gitlab.projectid").unwrap(), "42");
         assert!(!git_config.get_bool("gitlab.tls").unwrap());
         assert_eq!(git_config.get_string("gitlab.format").unwrap(), "JSON");
 
@@ -678,6 +697,7 @@ mod config_unit_tests {
             host: Some("bradhost".to_string()),
             tls: Some(false),
             format: Some(OutputFormat::JSON),
+            projectid: Some(42),
             repo_path: None,
             user_config_type: None
         };
@@ -705,6 +725,7 @@ mod config_unit_tests {
             host: None,
             tls: Some(false),
             format: Some(OutputFormat::JSON),
+            projectid: Some(42),
             repo_path: None,
             user_config_type: None
         };
