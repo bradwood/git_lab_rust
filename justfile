@@ -40,7 +40,7 @@ all-tests:
 	cargo test -- --skip config_unit_tests --test-threads=1
 
 test TEST:
-	cargo test {{TEST}} -- --test-threads=1
+	cargo test {{TEST}} -- --test-threads=1 --show-output
 
 tarp:
 	cargo tarpaulin

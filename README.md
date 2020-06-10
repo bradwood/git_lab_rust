@@ -14,7 +14,7 @@ functions include:
 * `init` -- initialise credentials aganst a remote GitLab server
 * `project` -- interact with GitLab projects
     * `project create` -- create project
-    * `project attach` -- associate a local repo with a project -- still WIP
+    * `project attach` -- associate a local repo with a project
 
 It has the following features:
 * config stored using standard `git config` machinery

@@ -12,10 +12,18 @@ use regex::Regex;
 use crate::config;
 use crate::gitlab;
 
+/// This maps to GitLab's two Project fields: `sshUrlToRepo` and `httpUrlToRepo`
+///
+/// Note that from a git perspective, server protocols under the `ssh` type in gitlab could either
+/// be prefixed `git@` or `ssh://`. We lump both of these types in as _SSH_ as GitLab does although
+/// technically, they are different protocols as discussed
+/// [here](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols).
+///
+/// Note also that HTTPS is (obviously) covered under the _HTTP_ protocol.
 #[derive(Debug)]
 #[derive(PartialEq)]
 enum RemoteType {
-    HTTPS,
+    HTTP,
     SSH,
 }
 
@@ -38,13 +46,14 @@ fn get_git_remote(config: &config::Config) -> Option<String> {
 /// Given a remote url, figure out what type it is, and what search term to find it with
 fn get_search_param_and_remote_type(url: &str) -> (RemoteType, String) {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"^(?P<remote>git|https)[^\s]+/(?P<search>[^\s]+)\.git$").unwrap();
+        static ref RE: Regex = Regex::new(r"^(?P<remote>ssh|git|http)[^\s]+/(?P<search>[^\s]+)\.git$").unwrap();
     }
 
     let caps = RE.captures(url).unwrap();
 
     let r_type = match caps.name("remote").unwrap().as_str() {
-        "https" => RemoteType::HTTPS,
+        "http" => RemoteType::HTTP,
+        "ssh" => RemoteType::SSH,
         "git" => RemoteType::SSH,
         _ => unreachable!(),
     };
@@ -66,7 +75,7 @@ fn get_remotes_from_server(search_str: &str, gitlabclient: gitlab::Client) -> Re
     Ok(response)
 }
 
-/// Parse project id from `gid://gitlab/Project/<id>` string
+/// Parse project id from `gid://gitlab/Project/<pid>` string
 fn parse_pid_from_gid(gid_str: &str) -> u64 {
     let v: Vec<&str> = gid_str.rsplit('/').collect();
     v[0].parse::<u64>().unwrap()
@@ -82,7 +91,7 @@ fn find_project_id(r_type: RemoteType, url: &str, remotes: projects_with_remotes
         let item = item.unwrap();
 
         let gl_remote = match r_type {
-            RemoteType::HTTPS => item.http_url_to_repo.unwrap(),
+            RemoteType::HTTP => item.http_url_to_repo.unwrap(),
             RemoteType::SSH => item.ssh_url_to_repo.unwrap(),
         };
 
@@ -131,4 +140,120 @@ pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gi
     config.save(config::GitConfigSaveableLevel::Repo)?;
     println!("Attached to GitLab Project ID: {}", project_id);
     Ok(())
+}
+
+#[cfg(test)]
+mod project_attach_unit_tests {
+    use rstest::*;
+
+    use super::*;
+
+    #[rstest(
+    url, r_type, search_str,
+    case("git@gitlab.com:aiganym_sag/hostel-management-system-master.git", RemoteType::SSH, "hostel-management-system-master"),
+    case("git@gitlab.com:aiganym_sag/hostel/management/system-master.git", RemoteType::SSH, "system-master"),
+    case("ssh://git@gitlab.com:one/two/three.git", RemoteType::SSH, "three"),
+    case("ssh://git@gitlab.com:2222/one/two/three.git", RemoteType::SSH, "three"),
+    case("https://gitlab.com/jandamuda0400/berat-badan-dan-jerawat.git", RemoteType::HTTP, "berat-badan-dan-jerawat"),
+    case("https://gitlab.com/jandamuda0400/berat/badan/dan/jerawat.git", RemoteType::HTTP, "jerawat"),
+    case("http://gitlab.com/jandamuda0400/berat-badan-dan-jerawat.git", RemoteType::HTTP, "berat-badan-dan-jerawat"),
+
+    )]
+    fn test_get_search_param_and_remote_type(url: &str, r_type: RemoteType, search_str: &str) {
+        let (t,s) = get_search_param_and_remote_type(url);
+        assert_eq!(t, r_type);
+        assert_eq!(s, search_str);
+    }
+
+    #[rstest(
+    gid_str, pid,
+    case("gid://gitlab/Project/12345", 12345),
+    )]
+    fn test_parse_pid_from_gid(gid_str: &str, pid: u64) {
+        assert_eq!(pid, parse_pid_from_gid(gid_str));
+    }
+
+    #[rstest(
+    pid, r_type, url, remotes,
+    case(23456, RemoteType::HTTP, "https://gitlab.com:one/two/four.git", 
+        projects_with_remotes::ResponseData {
+            projects:
+                Some(
+                    projects_with_remotes::ProjectsWithRemotesProjects {
+                        nodes:
+                            Some(
+                                vec!(
+                                    Some(
+                                        projects_with_remotes::ProjectsWithRemotesProjectsNodes {
+                                            id: "gid://gitlab/Project/12345".to_string(),
+                                            ssh_url_to_repo: Some("ssh://git@gitlab.com:one/two/three.git".to_string()),
+                                            http_url_to_repo: Some("https://gitlab.com:one/two/three.git".to_string()),
+                                        }
+                                    ),
+                                    Some(
+                                        projects_with_remotes::ProjectsWithRemotesProjectsNodes {
+                                            id: "gid://gitlab/Project/23456".to_string(),
+                                            ssh_url_to_repo: Some("ssh://git@gitlab.com:one/two/four.git".to_string()),
+                                            http_url_to_repo: Some("https://gitlab.com:one/two/four.git".to_string()),
+                                        }
+                                    ),
+                                )
+                            )
+                    }
+                )
+        }
+    ),
+    case(12345, RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git", 
+        projects_with_remotes::ResponseData {
+            projects:
+                Some(
+                    projects_with_remotes::ProjectsWithRemotesProjects {
+                        nodes:
+                            Some(
+                                vec!(
+                                    Some(
+                                        projects_with_remotes::ProjectsWithRemotesProjectsNodes {
+                                            id: "gid://gitlab/Project/12345".to_string(),
+                                            ssh_url_to_repo: Some("ssh://git@gitlab.com:one/two/three.git".to_string()),
+                                            http_url_to_repo: Some("https://gitlab.com:one/two/three.git".to_string()),
+                                        }
+                                    ),
+                                    Some(
+                                        projects_with_remotes::ProjectsWithRemotesProjectsNodes {
+                                            id: "gid://gitlab/Project/23456".to_string(),
+                                            ssh_url_to_repo: Some("ssh://git@gitlab.com:one/two/four.git".to_string()),
+                                            http_url_to_repo: Some("https://gitlab.com:one/two/four.git".to_string()),
+                                        }
+                                    ),
+                                )
+                            )
+                    }
+                )
+        }
+    ),
+    )]
+    fn test_find_project_id_good(pid: u64, r_type: RemoteType, url: &str, remotes: projects_with_remotes::ResponseData) {
+        assert_eq!(pid, find_project_id(r_type, url, remotes).unwrap());
+    }
+    #[rstest(
+    r_type, url, remotes,
+    case(RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git", 
+        projects_with_remotes::ResponseData {
+            projects:
+                Some(
+                    projects_with_remotes::ProjectsWithRemotesProjects {
+                        nodes:
+                            Some(
+                                vec!()
+                            )
+                    }
+                )
+        }
+    ),
+    )]
+    fn test_find_project_id_bad(r_type: RemoteType, url: &str, remotes: projects_with_remotes::ResponseData) {
+        assert!(
+            find_project_id(r_type, url, remotes).is_err(), 
+        );
+    }
 }
