@@ -174,7 +174,6 @@ fn get_level_config(multi_level: &GitConfig, level: ConfigLevel) -> GitConfig {
             GitConfig::new().unwrap()
         }
     }
-
 }
 
 /// Return which type of user config is being used. Is it Global ($HOME/.gitconfig)
