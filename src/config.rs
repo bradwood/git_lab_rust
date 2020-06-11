@@ -146,19 +146,19 @@ where
 {
     let gitlab_vars = vars.filter(|(k, _)| k.starts_with("GITLAB_"));
     for (key, value) in gitlab_vars {
-        if key == "GITLAB_TOKEN" { config.token = Some(value); continue };
-        if key == "GITLAB_HOST" { config.host = Some(value); continue };
-        if key == "GITLAB_TLS" {
-            config.tls = Some(
+        match key.as_str() {
+            "GITLAB_TOKEN" => config.token = Some(value),
+            "GITLAB_HOST" => config.host = Some(value),
+            "GITLAB_TLS" =>  config.tls = Some(
                 value.to_uppercase() == "TRUE" ||
                 value.to_uppercase() == "YES" ||
                 value.to_uppercase() == "ON" ||
                 value.to_uppercase() == "1"
-                );
-            continue
-        };
-        if key == "GITLAB_FORMAT" { config.format = value.parse::<OutputFormat>().ok(); continue };
-        if key == "GITLAB_PROJECTID" { config.projectid = value.parse::<u64>().ok(); continue };
+                ),
+            "GITLAB_FORMAT" => config.format = value.parse::<OutputFormat>().ok(),
+            "GITLAB_PROJECTID" => config.projectid = value.parse::<u64>().ok(),
+            _ => unreachable!(),
+        }
     }
 }
 
