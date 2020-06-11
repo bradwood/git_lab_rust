@@ -188,30 +188,47 @@ fn get_user_config_type() -> Option<UserGitConfigLevel> {
     }
 }
 
-/// Write config data to a git config
+/// Write config data to a git config,
 fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
 
-    if config.host.is_some() {
+    if config.host.is_some()
+        && ( env::var("GITLAB_HOST").is_err()
+            || &env::var("GITLAB_HOST").unwrap() != config.host.as_ref().unwrap()
+           )
+    {
         save_config.set_str("gitlab.host", config.host.as_ref().unwrap())
             .context("Failed to save gitlab.host to git config.")?;
     }
 
-    if config.token.is_some() {
+    if config.token.is_some()
+        && ( env::var("GITLAB_TOKEN").is_err()
+            || &env::var("GITLAB_TOKEN").unwrap() != config.token.as_ref().unwrap()
+           )
+    {
         save_config.set_str("gitlab.token", config.token.as_ref().unwrap())
             .context("Failed to save gitlab.token to git config.")?;
     }
 
+    // no environment checking for booleans, probably should be done at some point
     if config.tls.is_some() {
         save_config.set_bool("gitlab.tls", config.tls.unwrap())
             .context("Failed to save gitlab.tls to git config.")?;
     }
 
-    if config.format.is_some() {
-        save_config.set_str("gitlab.format", config.format.as_ref().unwrap().to_string().as_str())
+    if config.format.is_some()
+        && ( env::var("GITLAB_FORMAT").is_err()
+            || env::var("GITLAB_FORMAT").unwrap().to_lowercase() != config.format.as_ref().unwrap().to_string().to_lowercase()
+           )
+    {
+        save_config.set_str("gitlab.format", config.format.as_ref().unwrap().to_string().to_lowercase().as_str())
             .context("Failed to save gitlab.format to git config.")?;
     }
 
-    if config.projectid.is_some() {
+    if config.projectid.is_some()
+        && ( env::var("GITLAB_PROJECTID").is_err()
+            || env::var("GITLAB_PROJECTID").unwrap() != config.projectid.as_ref().unwrap().to_string()
+           )
+    {
         save_config.set_i64("gitlab.projectid", i64::try_from(config.projectid.unwrap()).unwrap())
             .context("Failed to save gitlab.projectid to git config.")?;
     }
@@ -676,7 +693,7 @@ mod config_unit_tests {
         assert_eq!(git_config.get_string("gitlab.host").unwrap(), "bradhost");
         assert_eq!(git_config.get_string("gitlab.projectid").unwrap(), "42");
         assert!(!git_config.get_bool("gitlab.tls").unwrap());
-        assert_eq!(git_config.get_string("gitlab.format").unwrap(), "JSON");
+        assert_eq!(git_config.get_string("gitlab.format").unwrap(), "json");
 
         reset_global_config();
         reset_xdg_config();
@@ -776,7 +793,7 @@ mod config_unit_tests {
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token");
         assert!(single_level.get_entry("gitlab.tls").is_err()); // it should error out looking this up
-        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "json");
 
         // lets check Global to make sure it's not there
         single_level = get_level_config(&git_config, Global);
@@ -819,7 +836,7 @@ mod config_unit_tests {
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost-globalxxx");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token-globalxxx");
         assert!(single_level.get_entry("gitlab.tls").is_err()); // it should error out looking this up
-        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "json");
 
         // lets check Local to make sure it's not there
         single_level = get_level_config(&git_config, Local);
@@ -861,7 +878,7 @@ mod config_unit_tests {
         let mut single_level = get_level_config(&git_config, XDG);
         assert_eq!(single_level.get_entry("gitlab.host").unwrap().value().unwrap(), "testhost-xdg");
         assert_eq!(single_level.get_entry("gitlab.token").unwrap().value().unwrap(), "test-token-xdg");
-        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "JSON");
+        assert_eq!(single_level.get_entry("gitlab.format").unwrap().value().unwrap(), "json");
 
         // lets check Local to make sure it's not there
         single_level = get_level_config(&git_config, Local);
