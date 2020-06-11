@@ -64,7 +64,6 @@ impl fmt::Display for OutputFormat {
 ///  * `$XDG_CONFIG_HOME/git/config` --- the __XDG__ config
 ///  * `$HOME/.gitconfig` --- the __global__ config
 ///  * `$GIT_DIR/.git/config` --- the repo-specific or __local__ config
-///  * The environment variables `GITLAB_HOST`, `GITLAB_TOKEN` and `GITLAB_TLS`
 ///
 /// Override priority increases from top to bottom.
 #[derive(Debug)]
@@ -144,19 +143,19 @@ where
     V: Iterator<Item = (String, String)> // use a trait bound to aid testing
 
 {
-    let gitlab_vars = vars.filter(|(k, _)| k.starts_with("GITLAB_"));
+    let gitlab_vars = vars.filter(|(k, _)| k.starts_with("GITLABCLI_"));
     for (key, value) in gitlab_vars {
         match key.as_str() {
-            "GITLAB_TOKEN" => config.token = Some(value),
-            "GITLAB_HOST" => config.host = Some(value),
-            "GITLAB_TLS" =>  config.tls = Some(
+            "GITLABCLI_TOKEN" => config.token = Some(value),
+            "GITLABCLI_HOST" => config.host = Some(value),
+            "GITLABCLI_TLS" =>  config.tls = Some(
                 value.to_uppercase() == "TRUE" ||
                 value.to_uppercase() == "YES" ||
                 value.to_uppercase() == "ON" ||
                 value.to_uppercase() == "1"
                 ),
-            "GITLAB_FORMAT" => config.format = value.parse::<OutputFormat>().ok(),
-            "GITLAB_PROJECTID" => config.projectid = value.parse::<u64>().ok(),
+            "GITLABCLI_FORMAT" => config.format = value.parse::<OutputFormat>().ok(),
+            "GITLABCLI_PROJECTID" => config.projectid = value.parse::<u64>().ok(),
             _ => unreachable!(),
         }
     }
@@ -192,8 +191,8 @@ fn get_user_config_type() -> Option<UserGitConfigLevel> {
 fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
 
     if config.host.is_some()
-        && ( env::var("GITLAB_HOST").is_err()
-            || &env::var("GITLAB_HOST").unwrap() != config.host.as_ref().unwrap()
+        && ( env::var("GITLABCLI_HOST").is_err()
+            || &env::var("GITLABCLI_HOST").unwrap() != config.host.as_ref().unwrap()
            )
     {
         save_config.set_str("gitlab.host", config.host.as_ref().unwrap())
@@ -201,8 +200,8 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
     }
 
     if config.token.is_some()
-        && ( env::var("GITLAB_TOKEN").is_err()
-            || &env::var("GITLAB_TOKEN").unwrap() != config.token.as_ref().unwrap()
+        && ( env::var("GITLABCLI_TOKEN").is_err()
+            || &env::var("GITLABCLI_TOKEN").unwrap() != config.token.as_ref().unwrap()
            )
     {
         save_config.set_str("gitlab.token", config.token.as_ref().unwrap())
@@ -216,8 +215,8 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
     }
 
     if config.format.is_some()
-        && ( env::var("GITLAB_FORMAT").is_err()
-            || env::var("GITLAB_FORMAT").unwrap().to_lowercase() != config.format.as_ref().unwrap().to_string().to_lowercase()
+        && ( env::var("GITLABCLI_FORMAT").is_err()
+            || env::var("GITLABCLI_FORMAT").unwrap().to_lowercase() != config.format.as_ref().unwrap().to_string().to_lowercase()
            )
     {
         save_config.set_str("gitlab.format", config.format.as_ref().unwrap().to_string().to_lowercase().as_str())
@@ -225,8 +224,8 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
     }
 
     if config.projectid.is_some()
-        && ( env::var("GITLAB_PROJECTID").is_err()
-            || env::var("GITLAB_PROJECTID").unwrap() != config.projectid.as_ref().unwrap().to_string()
+        && ( env::var("GITLABCLI_PROJECTID").is_err()
+            || env::var("GITLABCLI_PROJECTID").unwrap() != config.projectid.as_ref().unwrap().to_string()
            )
     {
         save_config.set_i64("gitlab.projectid", i64::try_from(config.projectid.unwrap()).unwrap())
@@ -655,10 +654,10 @@ mod config_unit_tests {
         use std::collections::HashMap;
         let mut env = HashMap::new();
 
-        env.insert("GITLAB_TOKEN".to_string(), "env_token".to_string());
-        env.insert("GITLAB_HOST".to_string(), "env_host".to_string());
-        env.insert("GITLAB_TLS".to_string(), "yeS".to_string());
-        env.insert("GITLAB_FORMAT".to_string(), "Json".to_string());
+        env.insert("GITLABCLI_TOKEN".to_string(), "env_token".to_string());
+        env.insert("GITLABCLI_HOST".to_string(), "env_host".to_string());
+        env.insert("GITLABCLI_TLS".to_string(), "yeS".to_string());
+        env.insert("GITLABCLI_FORMAT".to_string(), "Json".to_string());
 
         update_config_from_env(&mut conf, env.into_iter());
 
