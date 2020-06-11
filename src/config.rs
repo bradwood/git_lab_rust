@@ -145,19 +145,19 @@ where
 {
     let gitlab_vars = vars.filter(|(k, _)| k.starts_with("GITLABCLI_"));
     for (key, value) in gitlab_vars {
-        match key.as_str() {
-            "GITLABCLI_TOKEN" => config.token = Some(value),
-            "GITLABCLI_HOST" => config.host = Some(value),
-            "GITLABCLI_TLS" =>  config.tls = Some(
+        if key == "GITLABCLI_TOKEN" { config.token = Some(value); continue };
+        if key == "GITLABCLI_HOST" { config.host = Some(value); continue };
+        if key == "GITLABCLI_TLS" {
+            config.tls = Some(
                 value.to_uppercase() == "TRUE" ||
                 value.to_uppercase() == "YES" ||
                 value.to_uppercase() == "ON" ||
                 value.to_uppercase() == "1"
-                ),
-            "GITLABCLI_FORMAT" => config.format = value.parse::<OutputFormat>().ok(),
-            "GITLABCLI_PROJECTID" => config.projectid = value.parse::<u64>().ok(),
-            _ => unreachable!(),
-        }
+                );
+            continue
+        };
+        if key == "GITLABCLI_FORMAT" { config.format = value.parse::<OutputFormat>().ok(); continue };
+        if key == "GITLABCLI_PROJECTID" { config.projectid = value.parse::<u64>().ok(); continue };
     }
 }
 
