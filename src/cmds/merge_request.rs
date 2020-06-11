@@ -20,6 +20,7 @@ impl subcommand::SubCommand for MergeRequest<'_> {
     }
 
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
+        println!("Not implemented yet");
         trace!("Starting run()");
         trace!("Config: {:?}", config);
         trace!("Args: {:?}", args);
