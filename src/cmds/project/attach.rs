@@ -8,8 +8,10 @@ use git2::Repository;
 use graphql_client::GraphQLQuery;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde_json::json;
 
 use crate::config;
+use crate::config::OutputFormat;
 use crate::gitlab;
 
 /// This maps to GitLab's two Project fields: `sshUrlToRepo` and `httpUrlToRepo`
@@ -115,7 +117,6 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: gitlab::Client) -> Result<u64>
     let p_id = find_project_id(r_type, url, response)?;
 
     Ok(p_id)
-
 }
 
 pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gitlabclient: gitlab::Client) -> Result<()> {
@@ -138,8 +139,22 @@ pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gi
     }?;
     config.projectid = Some(project_id);
     config.save(config::GitConfigSaveableLevel::Repo)?;
-    println!("Attached to GitLab Project ID: {}", project_id);
-    Ok(())
+
+    match config.format {
+        Some(OutputFormat::JSON) => {
+            let j = json!({
+                    "project_id": project_id,
+                }
+            );
+            println!("{}", j);
+            Ok(())
+        },
+        Some(OutputFormat::Text) => {
+            println!("Attached to GitLab Project ID: {}", project_id);
+            Ok(())
+        },
+        _ => Err(anyhow!("Bad output format in config")),
+    }
 }
 
 #[cfg(test)]
