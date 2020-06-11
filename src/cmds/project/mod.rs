@@ -1,5 +1,6 @@
 mod attach;
 mod create;
+mod open;
 
 use anyhow::Result;
 use anyhow::Context;
@@ -23,6 +24,32 @@ impl subcommand::SubCommand for Project<'_> {
             .setting(clap::AppSettings::ColoredHelp)
             .setting(clap::AppSettings::VersionlessSubcommands)
             .setting(clap::AppSettings::SubcommandRequiredElseHelp)
+            .subcommand(
+                clap::SubCommand::with_name("open")
+                    .about("Opens the project in the default browser")
+                    .visible_aliases(&["view", "browse"])
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("url")
+                            .short("u")
+                            .long("print_url")
+                            .help("Print the URL instead of opening it.")
+                    )
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to view")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+                    .after_help(
+"This command will open the default browser to the URL of the attached project, or the project with \
+the project_id if passed in. It will use the BROWSER environment variable to determine which  browser \
+to use. If this is not set, on Linux, it will try `xdg-open(1)`",
+                    ),
+            )
             .subcommand(
                 clap::SubCommand::with_name("attach")
                     .about("Attaches a GitLab project to a local repo")
@@ -369,6 +396,7 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
         match args.subcommand() {
             ("create", Some(a)) => create::create_project_cmd(a.clone(), config, *gitlabclient)?,
             ("attach", Some(a)) => attach::attach_project_cmd(a.clone(), config, *gitlabclient)?,
+            ("open", Some(a)) => open::open_project_cmd(a.clone(), config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
