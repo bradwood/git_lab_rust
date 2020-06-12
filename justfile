@@ -44,3 +44,25 @@ test TEST:
 
 tarp:
 	cargo tarpaulin
+
+branch := `git rev-parse --abbrev-ref HEAD`
+last_tag := `git tag | tail -1`
+cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
+
+# bump minor version and tag
+bump-major:
+	test {{branch}} == "master"
+	test {{last_tag}} == {{cargo_ver}}
+	cargo bump major --git-tag
+
+# bump minor version and tag
+bump-minor:
+	test {{branch}} == "master"
+	test {{last_tag}} == {{cargo_ver}}
+	cargo bump minor --git-tag
+
+# bump patch version and tag
+bump-patch:
+	test {{branch}} == "master"
+	test {{last_tag}} == {{cargo_ver}}
+	cargo bump patch --git-tag
