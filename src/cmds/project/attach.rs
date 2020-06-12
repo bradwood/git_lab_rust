@@ -11,6 +11,7 @@ use regex::Regex;
 
 use crate::config;
 use crate::gitlab;
+use crate::utils;
 
 /// This maps to GitLab's two Project fields: `sshUrlToRepo` and `httpUrlToRepo`
 ///
@@ -115,7 +116,6 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: gitlab::Client) -> Result<u64>
     let p_id = find_project_id(r_type, url, response)?;
 
     Ok(p_id)
-
 }
 
 pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gitlabclient: gitlab::Client) -> Result<()> {
@@ -138,8 +138,9 @@ pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gi
     }?;
     config.projectid = Some(project_id);
     config.save(config::GitConfigSaveableLevel::Repo)?;
-    println!("Attached to GitLab Project ID: {}", project_id);
-    Ok(())
+
+    let out_vars = vec!(("project_id".to_string(), project_id.to_string())).into_iter();
+    utils::write_short_output(config.format, out_vars)
 }
 
 #[cfg(test)]

@@ -34,10 +34,10 @@ Initialisation via `git lab init` is not mandatory. Users preferring to set conf
 parameters by environment variables can do so. The variables that can be set are shown below. Note \
 that setting these will override the data set in any git config file.
 
-    GITLAB_HOST
-    GITLAB_TOKEN
-    GITLAB_TLS
-    GITLAB_FORMAT
+    GITLABCLI_HOST
+    GITLABCLI_TOKEN
+    GITLABCLI_TLS
+    GITLABCLI_FORMAT
 ")
 
             .arg(

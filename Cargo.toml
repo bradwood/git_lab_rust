@@ -1,6 +1,6 @@
 [package]
 name = "git_lab_cli"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Bradley Wood <git@bradleywood.com>"]
 edition = "2018"
 description = "A custom git command for interacting with a GitLab server"
@@ -31,6 +31,7 @@ serde = "1.0.106"
 url = "2.1.1"
 regex = "1"
 graphql_client = "0.8"  # note, pinned to be the same as that used by gitlab dependency...
+webbrowser = "0.5.4"
 
 [dependencies.clap]
 version = "2.33.0"

@@ -32,7 +32,7 @@ mod init_integration_tests {
         let git_config = GitConfig::open(&GitConfig::find_xdg().unwrap()).unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
-        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();
@@ -66,7 +66,7 @@ mod init_integration_tests {
         let git_config = repo.config().unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
-        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();
@@ -98,7 +98,7 @@ mod init_integration_tests {
         let git_config = GitConfig::open(&GitConfig::find_xdg().unwrap()).unwrap();
         assert_eq!(git_config.get_entry("gitlab.host").unwrap().value().unwrap(), "test-gitlab-host");
         assert_eq!(git_config.get_entry("gitlab.token").unwrap().value().unwrap(), "test-gitlab-token");
-        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "Text");
+        assert_eq!(git_config.get_entry("gitlab.format").unwrap().value().unwrap(), "text");
         assert!(git_config.get_bool("gitlab.tls").unwrap());
 
         reset_global_config();

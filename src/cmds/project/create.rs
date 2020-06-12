@@ -158,7 +158,7 @@ pub fn create_project_cmd(args: clap::ArgMatches, config: config::Config, gitlab
         Some(OutputFormat::JSON) => {
             let raw_json  = api::raw(endpoint)
                 .query(&gitlabclient)
-                .context("Fail")?;
+                .context("Failed to create project - check for name or path clashes on the server")?;
 
             println!("{}", String::from_utf8(raw_json).unwrap());
             Ok(())

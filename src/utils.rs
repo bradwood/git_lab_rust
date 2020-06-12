@@ -1,6 +1,33 @@
 use std::path::{Path, PathBuf};
+use std::collections::HashMap;
+use anyhow::Result;
+use serde_json::json;
+
+use crate::config::OutputFormat;
 
 const DOTGIT: &str = ".git";
+
+/// Print out JSON or test based vectors of key/value pairs
+pub fn write_short_output<M>(format: Option<OutputFormat>, map: M) -> Result<()>
+where
+    M: Iterator<Item = (String, String)>
+{
+    match format {
+        Some(OutputFormat::JSON) => {
+            let hash: HashMap<_,_> = map.collect();
+            let j = json!(&hash);
+
+            println!("{}", j);
+            Ok(())
+        },
+        Some(OutputFormat::Text) | None => {
+            for (key, value) in map {
+                println!("{}: {}", key, value)
+            }
+            Ok(())
+        }
+    }
+}
 
 /// Find a git repo in the current directory or any one above it.
 pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
