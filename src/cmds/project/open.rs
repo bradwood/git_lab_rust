@@ -16,21 +16,22 @@ pub fn generate_project_builder<'a>(
     args: &'a clap::ArgMatches,
     config: &'a config::Config,
     p: &'a mut ProjectBuilder<'a>,
-) -> GLProject<'a> 
+) -> Result<GLProject<'a>>
 {
     match (config.projectid, args.value_of("id")) {
         (None, Some(a_id)) => p.project(a_id),
         (Some(c_id), None) => p.project(c_id),
         (Some(_), Some(a_id)) => p.project(a_id),
-        (None, None) => unreachable!(),
+        (None, None) =>
+            return Err(anyhow!("No project ID passed and project not attached to the current repo. Run `git lab project attach`"))
     };
 
-    p.build().unwrap()
+    p.build().map_err(|e| anyhow!("Could not construct query to fetch project URL from server.\n {}",e))
 }
 
 pub fn open_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLProject::builder();
-    let endpoint = generate_project_builder(&args, &config, &mut p);
+    let endpoint = generate_project_builder(&args, &config, &mut p)?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);

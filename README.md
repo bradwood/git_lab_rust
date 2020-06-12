@@ -18,6 +18,7 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
     * `project create` -- create project
     * `project attach` -- associate a local repo with a project
     * `project (open|view|browse)` -- open project's URL in browser
+    * `project (show|info|get)` -- show details about a project
 
 ### Planned functions
 

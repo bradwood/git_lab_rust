@@ -1,6 +1,7 @@
 mod attach;
 mod create;
 mod open;
+mod show;
 
 use anyhow::Result;
 use anyhow::Context;
@@ -24,6 +25,21 @@ impl subcommand::SubCommand for Project<'_> {
             .setting(clap::AppSettings::ColoredHelp)
             .setting(clap::AppSettings::VersionlessSubcommands)
             .setting(clap::AppSettings::SubcommandRequiredElseHelp)
+            .subcommand(
+                clap::SubCommand::with_name("show")
+                    .about("Shows project information in the terminal")
+                    .visible_aliases(&["info", "get"])
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to view")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    ),
+            )
             .subcommand(
                 clap::SubCommand::with_name("open")
                     .about("Opens the project in the default browser")
@@ -397,6 +413,7 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
             ("create", Some(a)) => create::create_project_cmd(a.clone(), config, *gitlabclient)?,
             ("attach", Some(a)) => attach::attach_project_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_project_cmd(a.clone(), config, *gitlabclient)?,
+            ("show", Some(a)) => show::show_project_cmd(a.clone(), config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
