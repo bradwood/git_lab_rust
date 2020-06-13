@@ -65,6 +65,7 @@ mod gitlab;
 
 mod cmds {
     pub mod init;
+    pub mod issue;
     pub mod merge_request;
     pub mod project;
 }
@@ -73,9 +74,10 @@ use anyhow::Result;
 
 use config::Config;
 
-use crate::cmds::{init, merge_request, project};
+use crate::cmds::{init, merge_request, project, issue};
 
 fn main() -> Result<()> {
+    //TODO: refactor this at some point...
     let cli_commands = subcommand::ClapCommands {
         commands: vec![
             Box::new(init::Init {
@@ -83,6 +85,9 @@ fn main() -> Result<()> {
             }),
             Box::new(merge_request::MergeRequest {
                 clap_cmd: clap::SubCommand::with_name("merge-request"),
+            }),
+            Box::new(issue::Issue {
+                clap_cmd: clap::SubCommand::with_name("issue"),
             }),
             Box::new(project::Project {
                 clap_cmd: clap::SubCommand::with_name("project"),
@@ -105,6 +110,7 @@ fn main() -> Result<()> {
                 .multiple(true),
         )
         .subcommands(cli_commands.generate())
+        .after_help("Please report bugs at https://gitlab.com/bradwood/git-lab-rust")
         .get_matches();
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
@@ -119,7 +125,8 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone())?,
         ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
-        ("project", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
+        ("issue", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
+        ("project", Some(sub_args)) => cli_commands.commands[3].run(config, sub_args.clone())?,
         _ => (), // clap should catch this before it ever fires
     }
     Ok(())
