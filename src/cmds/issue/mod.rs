@@ -1,6 +1,6 @@
 // mod create;
 mod open;
-// mod show;
+mod show;
 
 use anyhow::Result;
 use anyhow::Context;
@@ -31,13 +31,12 @@ impl subcommand::SubCommand for Issue<'_> {
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
                         clap::Arg::with_name("id")
-                            .short("i")
-                            .long("issue_id")
-                            .help("Issue ID to view")
-                            .empty_values(false)
+                            .help("Issue ID to show")
                             .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
                             .validator(validator::check_u64)
-                    ),
+                    )
             )
             .subcommand(
                 clap::SubCommand::with_name("open")
@@ -61,7 +60,7 @@ impl subcommand::SubCommand for Issue<'_> {
                     )
                     .arg(
                         clap::Arg::with_name("id")
-                            .help("Issue ID to view")
+                            .help("Issue ID to open")
                             .takes_value(true)
                             .empty_values(false)
                             .required(true)
@@ -394,7 +393,7 @@ If you have errors using the `*_disabled` flags your GitLab server may no longer
         match args.subcommand() {
             // ("create", Some(a)) => create::create_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_issue_cmd(a.clone(), config, *gitlabclient)?,
-            // ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
+            ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
