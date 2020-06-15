@@ -70,13 +70,32 @@ mod cmds {
     pub mod project;
 }
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use config::Config;
 
 use crate::cmds::{init, merge_request, project, issue};
 
+/// This should be called before calling any cli method or printing any output.
+/// See https://github.com/rust-lang/rust/issues/46016#issuecomment-605624865
+fn reset_signal_pipe_handler() -> Result<()> {
+    #[cfg(target_family = "unix")]
+    {
+        use nix::sys::signal;
+
+        unsafe {
+            signal::signal(signal::Signal::SIGPIPE, signal::SigHandler::SigDfl)
+                .map_err(|e| anyhow!(e.to_string()))?;
+        }
+    }
+
+    Ok(())
+}
+
 fn main() -> Result<()> {
+
+    reset_signal_pipe_handler()?;
+
     //TODO: refactor this at some point...
     let cli_commands = subcommand::ClapCommands {
         commands: vec![
