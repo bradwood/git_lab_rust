@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -15,7 +15,7 @@ struct Project {
     id: u64,
     owner: Map<String, Value>,
     web_url: String,
-    created_at: String,
+    created_at: DateTime<Utc>,
     ssh_url_to_repo: String,
     http_url_to_repo: String,
     forks_count: u64,
@@ -48,13 +48,7 @@ pub fn show_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabcl
             println!("ID: {}", project.id);
             println!("Owner: {}", project.owner["name"].as_str().unwrap());
             println!("Owner's URL: {}", project.owner["web_url"].as_str().unwrap());
-            println!("Created: {}",
-                DateTime::parse_from_rfc3339(
-                    project.created_at.as_str())
-                    .unwrap()
-                    .with_timezone(&Local)
-                    .to_rfc2822()
-                );
+            println!("Created: {}", project.created_at.with_timezone(&Local) .to_rfc2822());
             println!("Web URL: {}", project.web_url);
             println!("SSH Repo URL: {}", project.ssh_url_to_repo);
             println!("HTTP Repo URL: {}", project.http_url_to_repo);
