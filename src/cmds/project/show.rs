@@ -22,6 +22,18 @@ struct Project {
     star_count: u64,
     visibility: String,
 }
+fn print_project(p: Project) {
+    println!("ID: {}", p.id);
+    println!("Owner: {}", p.owner["name"].as_str().unwrap());
+    println!("Owner's URL: {}", p.owner["web_url"].as_str().unwrap());
+    println!("Created: {}", p.created_at.with_timezone(&Local) .to_rfc2822());
+    println!("Web URL: {}", p.web_url);
+    println!("SSH Repo URL: {}", p.ssh_url_to_repo);
+    println!("HTTP Repo URL: {}", p.http_url_to_repo);
+    println!("Stars: {}", p.star_count);
+    println!("Forks: {}", p.forks_count);
+    println!("Visibility: {}", p.visibility);
+}
 
 pub fn show_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLProject::builder();
@@ -45,16 +57,7 @@ pub fn show_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabcl
                 .query(&gitlabclient)
                 .context("Failed to find project")?;
 
-            println!("ID: {}", project.id);
-            println!("Owner: {}", project.owner["name"].as_str().unwrap());
-            println!("Owner's URL: {}", project.owner["web_url"].as_str().unwrap());
-            println!("Created: {}", project.created_at.with_timezone(&Local) .to_rfc2822());
-            println!("Web URL: {}", project.web_url);
-            println!("SSH Repo URL: {}", project.ssh_url_to_repo);
-            println!("HTTP Repo URL: {}", project.http_url_to_repo);
-            println!("Stars: {}", project.star_count);
-            println!("Forks: {}", project.forks_count);
-            println!("Visibility: {}", project.visibility);
+            print_project(project);
             Ok(())
         },
         _ => Err(anyhow!("Bad output format in config")),

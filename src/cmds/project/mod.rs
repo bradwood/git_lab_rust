@@ -31,7 +31,7 @@ impl subcommand::SubCommand for Project<'_> {
                     .visible_aliases(&["info", "get"])
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
-                        clap::Arg::with_name("id")
+                        clap::Arg::with_name("project_id")
                             .short("p")
                             .long("project_id")
                             .help("Project ID to view")

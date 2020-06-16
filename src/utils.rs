@@ -1,11 +1,21 @@
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde_json::json;
 
+use crate::config;
 use crate::config::OutputFormat;
 
-const DOTGIT: &str = ".git";
+pub fn get_proj_from_arg_or_conf(args: &clap::ArgMatches, config: &config::Config) -> Result<u64> {
+
+    match (config.projectid, args.value_of("project_id")) {
+        (None, Some(a_id)) => Ok(a_id.parse::<u64>().unwrap()),
+        (Some(c_id), None) => Ok(c_id),
+        (Some(_), Some(a_id)) => Ok(a_id.parse::<u64>().unwrap()),
+        (None, None) =>
+            Err(anyhow!("No project ID passed and project not attached to the current repo. Run `git lab project attach`")),
+    }
+}
 
 /// Print out JSON or test based vectors of key/value pairs
 pub fn write_short_output<M>(format: Option<OutputFormat>, map: M) -> Result<()>
@@ -31,6 +41,8 @@ where
 
 /// Find a git repo in the current directory or any one above it.
 pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
+    const DOTGIT: &str = ".git";
+
     let mut path: PathBuf = starting_directory.into();
     let dotgit = Path::new(DOTGIT);
 
