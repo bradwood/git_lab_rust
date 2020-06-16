@@ -15,20 +15,14 @@ pub fn generate_issue_builder<'a>(
     args: &'a clap::ArgMatches,
     config: &'a config::Config,
     i: &'a mut IssueBuilder<'a>,
-) -> Result<GLIssue<'a>>
-{
-    match (config.projectid, args.value_of("pid")) {
-        (None, Some(a_id)) => i.project(a_id),
-        (Some(c_id), None) => i.project(c_id),
-        (Some(_), Some(a_id)) => i.project(a_id),
-        (None, None) =>
-            return Err(anyhow!("No project ID passed and project not attached to the current repo. Run `git lab project attach`"))
-    };
+) -> Result<GLIssue<'a>> {
 
-    i.issue(args.value_of("id").unwrap().parse::<u64>().unwrap()).build()
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    i.project(project_id);
+    i.issue(args.value_of("id").unwrap().parse::<u64>().unwrap());
+    i.build()
         .map_err(|e| anyhow!("Could not construct query to fetch project URL from server.\n {}",e))
 }
-
 
 pub fn open_issue_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLIssue::builder();
