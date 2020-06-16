@@ -56,6 +56,7 @@ pub mod validator {
     use lazy_static::*;
     use regex::Regex;
     use url::Url;
+    use chrono::NaiveDate;
 
     /// check for valid u64 int
     pub fn check_u64(v: String) -> Result<(), String> {
@@ -64,6 +65,15 @@ pub mod validator {
         }
         Err(String::from("The value is not a positive integer"))
     }
+
+    /// check for valid chrono::NaiveDate string
+    pub fn check_yyyy_mm_dd(v: String) -> Result<(), String> {
+        if NaiveDate::parse_from_str(&v, "%Y-%m-%d").is_ok() {
+            return Ok(());
+        }
+        Err(String::from("The value is not date of form YYYY-MM-YY"))
+    }
+
     /// check for gitlab project slug
     /// Rules:
     /// * can only contain letters, digits, `_`, `-` and `.`
@@ -84,6 +94,7 @@ pub mod validator {
             Cannot end with `.git` or `.atom`",
         ))
     }
+
     /// Checks branch is valid according to git-check-ref-format(1)
     // TODO: Improve this once upstream API changes or bite the bullet and implement it here, but
     // the below should be good enough for most cases.
@@ -120,6 +131,17 @@ mod validator_unit_tests {
         let v = check_url(String::from("http:///1.2.3.4"));
         assert!(v.is_ok());
         let v = check_url(String::from("http://gitlab.com/blah/bah"));
+        assert!(v.is_ok());
+    }
+
+    #[test]
+    fn test_check_yyyy_mm_dd() {
+        let v = check_yyyy_mm_dd(String::from("brad"));
+        assert!(v.is_err());
+        let v = check_yyyy_mm_dd(String::from("-345"));
+        assert!(v.is_err());
+
+        let v = check_yyyy_mm_dd(String::from("1943-12-22"));
         assert!(v.is_ok());
     }
 
