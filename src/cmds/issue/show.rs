@@ -122,8 +122,17 @@ fn print_issue(i: Issue) {
             d.dimmed(),
             );
     }
+    println!();
 
-    print!("\n\n");
+    //print labels
+    if !i.labels.is_empty() {
+    print!("labels • ");
+        for l in i.labels {
+            print!("{} ", l);
+        }
+    }
+
+    println!("\n");
 
     // print the entire issue description
     if i.description.is_some() {
