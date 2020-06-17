@@ -1,8 +1,9 @@
+use anyhow::{Context, Result};
+use dialoguer::{Input, PasswordInput, Select};
+
 use crate::config;
 use crate::config::GitConfigSaveableLevel::{Repo, User};
 use crate::subcommand;
-use anyhow::{Context, Result};
-use dialoguer::{Input, PasswordInput, Select};
 
 /// This implements the `init` command. It initialises the GitLab-specific config data needed to
 /// communicate with the server. See [`config`] for more details.
