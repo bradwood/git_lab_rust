@@ -154,7 +154,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .takes_value(true)
                             .help("Sets how many merge request approvals are required before merge")
                             .empty_values(false)
-                            .validator(validator::check_u64)
+                            .validator(validator::check_u32)
                     )
                     .arg(
                         clap::Arg::with_name("build_timeout")
@@ -162,7 +162,7 @@ If invoked outside the context of a local repo, the command will fail.",
                             .takes_value(true)
                             .help("Sets timeout before killing CI/CD pipeline in minutes")
                             .empty_values(false)
-                            .validator(validator::check_u64)
+                            .validator(validator::check_u32)
                     )
                     .arg(
                         clap::Arg::with_name("build_coverage_regex")
@@ -175,7 +175,6 @@ If invoked outside the context of a local repo, the command will fail.",
                         clap::Arg::with_name("ci_config_path")
                             .long("ci_config_path")
                             .help("Sets path to gitlab ci config file.")
-                            // .default_value(".gitlab-ci.yml")
                             .takes_value(true)
                             .empty_values(false)
                     )
