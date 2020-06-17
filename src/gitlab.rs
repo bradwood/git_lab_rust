@@ -16,6 +16,10 @@ pub use gitlab::api::projects::Project;
 pub use gitlab::api::projects::ProjectBuilder;
 pub use gitlab::api::projects::CreateProject;
 pub use gitlab::api::projects::CreateProjectBuilder;
+pub use gitlab::api::projects::issues::Issue;
+pub use gitlab::api::projects::issues::IssueBuilder;
+pub use gitlab::api::projects::issues::CreateIssue;
+pub use gitlab::api::projects::issues::CreateIssueBuilder;
 
 pub use gitlab::api::common::EnableState;
 pub use gitlab::api::common::VisibilityLevel;

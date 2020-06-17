@@ -126,6 +126,10 @@ pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gi
         (Some(r), a) if !a.is_present("name") && !a.is_present("id") => {
             get_proj_id_by_remote(r, gitlabclient)
                 .with_context(|| format!("Could not look up GitLab project using 'origin' remote '{}'", r))
+                .context("
+Your GitLab server is probably not at a version with decent GraphQL support. You can work round \
+this by manually obtaining the project's ID from the GUI and adding it to your repo's config like so: \n\n\
+    git config --local --add gitlab.projectid <project_id>")
         },
         (_, a) if a.is_present("id") => {
             a.value_of("id").unwrap().parse::<u64>().map_err(|e| anyhow!(e))

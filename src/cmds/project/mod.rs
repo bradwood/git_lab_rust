@@ -31,7 +31,7 @@ impl subcommand::SubCommand for Project<'_> {
                     .visible_aliases(&["info", "get"])
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
-                        clap::Arg::with_name("id")
+                        clap::Arg::with_name("project_id")
                             .short("p")
                             .long("project_id")
                             .help("Project ID to view")
@@ -49,7 +49,7 @@ impl subcommand::SubCommand for Project<'_> {
                         clap::Arg::with_name("url")
                             .short("u")
                             .long("print_url")
-                            .help("Print the URL instead of opening it.")
+                            .help("Prints the URL instead of opening it.")
                     )
                     .arg(
                         clap::Arg::with_name("id")
@@ -316,16 +316,6 @@ If invoked outside the context of a local repo, the command will fail.",
                             .empty_values(false)
                             .require_delimiter(true)
                     )
-                    // .arg(
-                    //     clap::Arg::with_name("container_expiration_policy")
-                    //         .long("container_expiration_policy")
-                    //         .help("Sets container expiration policy attributes. See GitLab docs for details.")
-                    //         .takes_value(true)
-                    //         .multiple(true)
-                    //         .requires("enable_container_registry")
-                    //         .empty_values(false)
-                    //         .require_delimiter(true)
-                    // )
                     .arg(
                         clap::Arg::with_name("enable_public_builds")
                             .long("enable_public_builds")

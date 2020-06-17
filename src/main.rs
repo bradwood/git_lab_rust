@@ -11,31 +11,35 @@
 //!
 //! ## Current functions
 //!
-//! * `init` -- initialise credentials aganst a remote GitLab server
-//! * `project` -- interact with GitLab projects
+//!  * `init` -- initialise credentials aganst a remote GitLab server
+//!  * `project` -- interact with GitLab projects
 //!     * `project create` -- create project
 //!     * `project attach` -- associate a local repo with a project
 //!     * `project (open|view|browse)` -- open project's URL in browser
 //!     * `project (show|info|get)` -- show details about a project
 //!
+//!  * `issue` -- interact with issues
+//!     * `issue create` -- create issue
+//!     * `issue (open|view|browse)` -- open issue's URL in browser
+//!     * `issue (show|info|get)` -- show details about a issue
+//!
 //! ## Planned functions
 //!
-//! * `issue` -- interact with issues
-//! * `merge-request` -- interact with merge requests
-//! * `pipeline` -- interact with Gitlab CI jobs
-//! * probably others
+//!  * `merge-request` -- interact with merge requests
+//!  * `pipeline` -- interact with Gitlab CI jobs
+//!  * probably others
 //!
 //! # Features
 //!
 //! ## Current features
 //!
-//! * Config stored using standard `git config` machinery
-//! * JSON output in addition to plain text to allow for parsing with tools like `jq`.
+//!  * Config stored using standard `git config` machinery
+//!  * JSON output in addition to plain text to allow for parsing with tools like `jq`.
 //!
 //! ## Planned features
 //!
-//! * `$EDITOR` integration
-//! * Terminal-based markdown rendering
+//!  * `$EDITOR` integration
+//!  * Terminal-based markdown rendering
 //!
 //! # Installation
 //!
@@ -61,17 +65,38 @@ mod gitlab;
 
 mod cmds {
     pub mod init;
+    pub mod issue;
     pub mod merge_request;
     pub mod project;
 }
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use config::Config;
 
-use crate::cmds::{init, merge_request, project};
+use crate::cmds::{init, merge_request, project, issue};
+
+/// This should be called before calling any cli method or printing any output.
+/// See https://github.com/rust-lang/rust/issues/46016#issuecomment-605624865
+fn reset_signal_pipe_handler() -> Result<()> {
+    #[cfg(target_family = "unix")]
+    {
+        use nix::sys::signal;
+
+        unsafe {
+            signal::signal(signal::Signal::SIGPIPE, signal::SigHandler::SigDfl)
+                .map_err(|e| anyhow!(e.to_string()))?;
+        }
+    }
+
+    Ok(())
+}
 
 fn main() -> Result<()> {
+
+    reset_signal_pipe_handler()?;
+
+    //TODO: refactor this at some point...
     let cli_commands = subcommand::ClapCommands {
         commands: vec![
             Box::new(init::Init {
@@ -79,6 +104,9 @@ fn main() -> Result<()> {
             }),
             Box::new(merge_request::MergeRequest {
                 clap_cmd: clap::SubCommand::with_name("merge-request"),
+            }),
+            Box::new(issue::Issue {
+                clap_cmd: clap::SubCommand::with_name("issue"),
             }),
             Box::new(project::Project {
                 clap_cmd: clap::SubCommand::with_name("project"),
@@ -101,6 +129,7 @@ fn main() -> Result<()> {
                 .multiple(true),
         )
         .subcommands(cli_commands.generate())
+        .after_help("Please report bugs at https://gitlab.com/bradwood/git-lab-rust")
         .get_matches();
 
     loggerv::init_with_verbosity(matches.occurrences_of("verbose")).unwrap();
@@ -115,7 +144,8 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone())?,
         ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
-        ("project", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
+        ("issue", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
+        ("project", Some(sub_args)) => cli_commands.commands[3].run(config, sub_args.clone())?,
         _ => (), // clap should catch this before it ever fires
     }
     Ok(())

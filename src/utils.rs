@@ -1,11 +1,21 @@
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde_json::json;
 
+use crate::config;
 use crate::config::OutputFormat;
 
-const DOTGIT: &str = ".git";
+pub fn get_proj_from_arg_or_conf(args: &clap::ArgMatches, config: &config::Config) -> Result<u64> {
+
+    match (config.projectid, args.value_of("project_id")) {
+        (None, Some(a_id)) => Ok(a_id.parse::<u64>().unwrap()),
+        (Some(c_id), None) => Ok(c_id),
+        (Some(_), Some(a_id)) => Ok(a_id.parse::<u64>().unwrap()),
+        (None, None) =>
+            Err(anyhow!("No project ID passed and project not attached to the current repo. Run `git lab project attach`")),
+    }
+}
 
 /// Print out JSON or test based vectors of key/value pairs
 pub fn write_short_output<M>(format: Option<OutputFormat>, map: M) -> Result<()>
@@ -31,6 +41,8 @@ where
 
 /// Find a git repo in the current directory or any one above it.
 pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
+    const DOTGIT: &str = ".git";
+
     let mut path: PathBuf = starting_directory.into();
     let dotgit = Path::new(DOTGIT);
 
@@ -56,6 +68,7 @@ pub mod validator {
     use lazy_static::*;
     use regex::Regex;
     use url::Url;
+    use chrono::NaiveDate;
 
     /// check for valid u64 int
     pub fn check_u64(v: String) -> Result<(), String> {
@@ -64,6 +77,15 @@ pub mod validator {
         }
         Err(String::from("The value is not a positive integer"))
     }
+
+    /// check for valid chrono::NaiveDate string
+    pub fn check_yyyy_mm_dd(v: String) -> Result<(), String> {
+        if NaiveDate::parse_from_str(&v, "%Y-%m-%d").is_ok() {
+            return Ok(());
+        }
+        Err(String::from("The value is not date of form YYYY-MM-YY"))
+    }
+
     /// check for gitlab project slug
     /// Rules:
     /// * can only contain letters, digits, `_`, `-` and `.`
@@ -84,6 +106,7 @@ pub mod validator {
             Cannot end with `.git` or `.atom`",
         ))
     }
+
     /// Checks branch is valid according to git-check-ref-format(1)
     // TODO: Improve this once upstream API changes or bite the bullet and implement it here, but
     // the below should be good enough for most cases.
@@ -120,6 +143,17 @@ mod validator_unit_tests {
         let v = check_url(String::from("http:///1.2.3.4"));
         assert!(v.is_ok());
         let v = check_url(String::from("http://gitlab.com/blah/bah"));
+        assert!(v.is_ok());
+    }
+
+    #[test]
+    fn test_check_yyyy_mm_dd() {
+        let v = check_yyyy_mm_dd(String::from("brad"));
+        assert!(v.is_err());
+        let v = check_yyyy_mm_dd(String::from("-345"));
+        assert!(v.is_err());
+
+        let v = check_yyyy_mm_dd(String::from("1943-12-22"));
         assert!(v.is_ok());
     }
 

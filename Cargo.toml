@@ -11,12 +11,6 @@ homepage = "https://gitlab.com/bradwood/git-lab-rust"
 keywords = ["git", "Gitlab", "cli"]
 categories = ["development-tools", "command-line-utilities"]
 license = "MIT"
-# TODO: check if the below is needed in CI to source .graphql files
-# include = ["src/**/*", "*.toml", "README.md" ]
-
-# [badges]
-# gitlab = { repository = "bradwood/git-lab-rust" }
-# gitlab = { repository = "https://gitlab.com/bradwood/git-lab-rust" }
 
 [dependencies]
 anyhow = "1.0"
@@ -30,9 +24,19 @@ serde_json = "1.0.52"
 serde = "1.0.106"
 url = "2.1.1"
 regex = "1"
-graphql_client = "0.8"  # note, pinned to be the same as that used by gitlab dependency...
+graphql_client = "0.8"
 webbrowser = "0.5.4"
 chrono = "0.4.11"
+termimad = "0.8.23"
+crossterm = "0.17.5"
+# prettytable-rs = "0.8.0"
+# indenter = "0.3.0"
+colored = "1.9.3"
+chrono-humanize = "0.0.11"
+textwrap = "0.11.0"
+
+[target.'cfg(target_family = "unix")'.dependencies]
+nix = "0.17.0"
 
 [dependencies.clap]
 version = "2.33.0"
@@ -48,6 +52,5 @@ rexpect = "0.3"
 rstest = "0.6"
 
 [[bin]]
-name = "git-lab"           # The name of the target.
-path = "src/main.rs"    # The source file of the target.
-
+name = "git-lab"
+path = "src/main.rs"
