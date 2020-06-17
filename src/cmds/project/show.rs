@@ -22,11 +22,12 @@ struct Project {
     star_count: u64,
     visibility: String,
 }
+
 fn print_project(p: Project) {
     println!("ID: {}", p.id);
     println!("Owner: {}", p.owner["name"].as_str().unwrap());
     println!("Owner's URL: {}", p.owner["web_url"].as_str().unwrap());
-    println!("Created: {}", p.created_at.with_timezone(&Local) .to_rfc2822());
+    println!("Created: {}", p.created_at.with_timezone(&Local).to_rfc2822());
     println!("Web URL: {}", p.web_url);
     println!("SSH Repo URL: {}", p.ssh_url_to_repo);
     println!("HTTP Repo URL: {}", p.http_url_to_repo);

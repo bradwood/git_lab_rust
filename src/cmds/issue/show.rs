@@ -2,10 +2,12 @@ use anyhow::{anyhow, Context, Result};
 use chrono::prelude::*;
 use chrono_humanize::HumanTime;
 use colored::*;
+use lazy_static::*;
+use regex::Regex;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use termimad::*;
-use textwrap::indent;
+use textwrap::{indent, fill, termwidth};
 
 use crate::config;
 use crate::config::OutputFormat;
@@ -59,6 +61,7 @@ fn print_issue(i: Issue) {
     let comments = format!("{}", "comments".dimmed());
     let updated = format!("{}", "updated".dimmed());
     let due = format!("{}", "due".dimmed());
+    let confidential = format!("{}", "⊖".dimmed());
 
     // title
     println!("{} ",
@@ -87,10 +90,17 @@ fn print_issue(i: Issue) {
         );
 
     if i.weight.is_some() {
-        println!("{} {}{}",
+        print!("{} {}{}",
             dot,
             i.weight.unwrap().to_string().dimmed(),
             weight,
+            )
+    }
+
+    if i.confidential {
+        print!("{} {}",
+            dot,
+            confidential,
             )
     } else {
         println!();
@@ -124,12 +134,27 @@ fn print_issue(i: Issue) {
     }
     println!();
 
-    //print labels
+    // print labels -- this is bit tricky, as we want to linewrap the labels, but not mid-label even if
+    // it has a space in it. We tackle this by:
+    // - substititing spaces _in_ the label with NBSPs
+    // - we then generate a _single_ string of labels with spaces in between
+    // - we then textwrap the result.
+    lazy_static! {
+        static ref WHITESPACE_RE: Regex = Regex::new(r"\s").unwrap();
+    }
+    const NBSP: char = '\u{a0}';
+
     if !i.labels.is_empty() {
-    print!("labels • ");
-        for l in i.labels {
-            print!("{} ", l);
-        }
+        // print!("labels • ");
+
+        let label_str =
+            i.labels
+            .iter()
+            .map(|x| WHITESPACE_RE.replace_all(&x, NBSP.to_string().as_str()).to_string())
+            .collect::<Vec<String>>()
+            .join(&format!(" {} ", dot));
+
+        print!("{}", indent(&fill(&label_str, termwidth() - 12), "         ").italic());
     }
 
     println!("\n");
@@ -141,7 +166,7 @@ fn print_issue(i: Issue) {
         area.pad(6,0);
         let md = skin.area_text(desc_text.as_str(), &area).to_string();
 
-        let indent_md = indent(&md, "    "); 
+        let indent_md = indent(&md, "    ");
         println!("{}", &indent_md);
 
         println!("{} {}",
