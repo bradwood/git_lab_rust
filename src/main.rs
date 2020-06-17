@@ -12,13 +12,16 @@
 //! ## Current functions
 //!
 //!  * `init` -- initialise credentials aganst a remote GitLab server
+//!
 //!  * `project` -- interact with GitLab projects
+//!
 //!     * `project create` -- create project
 //!     * `project attach` -- associate a local repo with a project
 //!     * `project (open|view|browse)` -- open project's URL in browser
 //!     * `project (show|info|get)` -- show details about a project
 //!
 //!  * `issue` -- interact with issues
+//!
 //!     * `issue create` -- create issue
 //!     * `issue (open|view|browse)` -- open issue's URL in browser
 //!     * `issue (show|info|get)` -- show details about a issue
@@ -26,10 +29,15 @@
 //! ## Planned functions
 //!
 //!  * `project` -- interact with GitLab projects
+//!
 //!     * `project list` -- get list of projects
+//!
 //!  * `issue` -- interact with issues
+//!
 //!     * `issue list` -- get list of issues
+//!
 //!  * `merge-request` -- interact with merge requests
+//!
 //!     * `merge-request create` -- create merge request
 //!     * `merge-request list` -- get list of merge requests
 //!     * `merge-request (open|view|browse)` -- open merge-request's URL in browser
