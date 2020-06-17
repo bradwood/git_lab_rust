@@ -25,9 +25,22 @@
 //!
 //! ## Planned functions
 //!
+//!  * `project` -- interact with GitLab projects
+//!     * `project list` -- get list of projects
+//!  * `issue` -- interact with issues
+//!     * `issue list` -- get list of issues
 //!  * `merge-request` -- interact with merge requests
+//!     * `merge-request create` -- create merge request
+//!     * `merge-request list` -- get list of merge requests
+//!     * `merge-request (open|view|browse)` -- open merge-request's URL in browser
+//!     * `merge-request (show|info|get)` -- show details about a merge-request
+//!     * `merge-request approve` -- approve merge request
+//!     * `merge-request merge` -- merge merge request
+//!
 //!  * `pipeline` -- interact with Gitlab CI jobs
-//!  * probably others
+//!  * `group` -- interact with Gitlab groups
+//!  * `user` -- interact with Gitlab users
+//!  * probably others like `labels`, etc..
 //!
 //! # Features
 //!
@@ -35,11 +48,14 @@
 //!
 //!  * Config stored using standard `git config` machinery
 //!  * JSON output in addition to plain text to allow for parsing with tools like `jq`.
+//!  * Terminal-based markdown rendering
 //!
 //! ## Planned features
 //!
-//!  * `$EDITOR` integration
-//!  * Terminal-based markdown rendering
+//!  * `$EDITOR` integration on `create` commands
+//!  * `musl` and `glibc` binary packages
+//!  * support for various linux packaging tools like AUR, Deb, RPM, etc
+//!  * non-Linux support (maybe)
 //!
 //! # Installation
 //!
