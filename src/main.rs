@@ -22,7 +22,8 @@
 //!
 //!  * `issue` -- interact with issues
 //!
-//!     * `issue create` -- create issue
+//!     * `issue create` -- create issue (either entirely via cli-passed parameters, or
+//!        interactively, by prompting the user for the inputs needed)
 //!     * `issue (open|view|browse)` -- open issue's URL in browser
 //!     * `issue (show|info|get)` -- show details about a issue
 //!
@@ -55,12 +56,14 @@
 //! ## Current features
 //!
 //!  * Config stored using standard `git config` machinery
-//!  * JSON output in addition to plain text to allow for parsing with tools like `jq`.
+//!  * Locally cached Gitlab metadata to improve usability when creating gitlab objects
+//!    interactively
+//!  * JSON output in addition to plain text to allow for parsing with tools like `jq`
 //!  * Terminal-based markdown rendering
+//!  * `$EDITOR` integration on `create` commands
 //!
 //! ## Planned features
 //!
-//!  * `$EDITOR` integration on `create` commands
 //!  * `musl` and `glibc` binary packages
 //!  * support for various linux packaging tools like AUR, Deb, RPM, etc
 //!  * non-Linux support (maybe)

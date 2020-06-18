@@ -14,24 +14,33 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
 ### Current functions
 
  * `init` -- initialise credentials aganst a remote GitLab server
+
  * `project` -- interact with GitLab projects
+
     * `project create` -- create project
     * `project attach` -- associate a local repo with a project
     * `project (open|view|browse)` -- open project's URL in browser
     * `project (show|info|get)` -- show details about a project
 
  * `issue` -- interact with issues
-    * `issue create` -- create issue
+
+    * `issue create` -- create issue (either entirely via cli-passed parameters, or
+       interactively, by prompting the user for the inputs needed)
     * `issue (open|view|browse)` -- open issue's URL in browser
     * `issue (show|info|get)` -- show details about a issue
 
 ### Planned functions
 
  * `project` -- interact with GitLab projects
+
     * `project list` -- get list of projects
+
  * `issue` -- interact with issues
+
     * `issue list` -- get list of issues
+
  * `merge-request` -- interact with merge requests
+
     * `merge-request create` -- create merge request
     * `merge-request list` -- get list of merge requests
     * `merge-request (open|view|browse)` -- open merge-request's URL in browser
@@ -49,12 +58,14 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
 ### Current features
 
  * Config stored using standard `git config` machinery
- * JSON output in addition to plain text to allow for parsing with tools like `jq`.
+ * Locally cached Gitlab metadata to improve usability when creating gitlab objects
+   interactively
+ * JSON output in addition to plain text to allow for parsing with tools like `jq`
  * Terminal-based markdown rendering
+ * `$EDITOR` integration on `create` commands
 
 ### Planned features
 
- * `$EDITOR` integration on `create` commands
  * `musl` and `glibc` binary packages
  * support for various linux packaging tools like AUR, Deb, RPM, etc
  * non-Linux support (maybe)
