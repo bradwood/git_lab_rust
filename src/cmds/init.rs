@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use dialoguer::{Input, PasswordInput, Select};
+use dialoguer::{Input, Password, Select};
 
 use crate::config;
 use crate::config::GitConfigSaveableLevel::{Repo, User};
@@ -67,7 +67,7 @@ and local) then you must directly edit the relevant files or invoke git-config(1
             .with_prompt("GitLab host")
             .default(config.host.unwrap_or_else(|| "None".to_string()))
             .interact().ok();
-        config.token = PasswordInput::new()
+        config.token = Password::new()
             .with_prompt("GitLab personal access token")
             .interact().ok();
         config.tls = Input::<bool>::new()

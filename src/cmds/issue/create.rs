@@ -2,7 +2,7 @@
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
-use dialoguer::{Input, Editor};
+use dialoguer::{Input, Editor, MultiSelect};
 use serde::Deserialize;
 
 use crate::config;
@@ -78,8 +78,7 @@ fn interactive_issue_builder<'a>(
     let description = Editor::new()
         .extension(".md")
         .require_save(true)
-        .edit("Issue description (markdown supported)")?;
-
+        .edit("<!-- insert issue description here (markdown supported) -- save and quit when done -->")?;
     if let Some(desc) = description {
         i.description(desc);
     }
@@ -90,7 +89,6 @@ fn interactive_issue_builder<'a>(
         .allow_empty(true)
         .validate_with(|d: &str| validator::check_u32_or_empty(d))
         .interact()?;
-
     if !weight.is_empty() {
         i.weight(
             weight.parse::<u64>()
@@ -110,7 +108,6 @@ fn interactive_issue_builder<'a>(
         .allow_empty(true)
         .validate_with(|d: &str| validator::check_yyyy_mm_dd_or_empty(d))
         .interact()?;
-
     if !due_date.is_empty() {
         i.due_date(
             NaiveDate::parse_from_str(&due_date, "%Y-%m-%d")
@@ -118,7 +115,18 @@ fn interactive_issue_builder<'a>(
         );
     }
 
-    //TODO: add assignee, labels and milestone selectors
+    let labels = MultiSelect::new()
+        .with_prompt("Label(s)")
+        .items(&config.labels[..])
+        .interact()?;
+
+    if !labels.is_empty() {
+        i.labels( labels.iter().map(|x| config.labels[*x].clone()).collect::<Vec<String>>() );
+    }
+
+    debug!("labels: {:#?}", labels);
+
+    //TODO: add assignee, and milestone selectors
 
     i.build()
         .map_err(|e| anyhow!("Could not construct query to post issue to server.\n {}",e))
