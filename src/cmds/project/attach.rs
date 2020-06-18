@@ -12,6 +12,7 @@ use serde::Deserialize;
 
 use crate::config;
 use crate::gitlab::Labels as GLLabels;
+use crate::gitlab::ProjectMembers as GLMembers;
 use crate::gitlab::Query;
 use crate::gitlab;
 use crate::utils;
@@ -121,6 +122,27 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: &gitlab::Client) -> Result<u64
     Ok(p_id)
 }
 
+fn get_project_members(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
+    let mut members_builder = GLMembers::builder();
+    let endpoint = members_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
+
+    debug!("endpoint: {:#?}", endpoint);
+
+    #[derive(Deserialize, Debug)]
+    struct Member {
+        id: u64,
+        username: String
+    }
+
+    let members: Vec<Member> = endpoint
+        .query(gitlabclient)
+        .context("Failed to query project members")?;
+
+    debug!("members: {:#?}", members);
+    Ok(members.iter().map(|m| format!("{}:{}", m.id.to_string(), m.username.clone())).collect())
+}
+
 fn get_project_labels(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
     let mut labels_builder = GLLabels::builder();
     let endpoint = labels_builder.project(project_id).build()
@@ -167,7 +189,7 @@ this by manually obtaining the project's ID from the GUI and adding it to your r
     }?;
     config.projectid = Some(project_id);
     config.labels = get_project_labels(project_id, &gitlabclient)?;
-    // debug!("label_strs: {:#?}", get_project_labels(project_id, &gitlabclient).unwrap());
+    config.members = get_project_members(project_id, &gitlabclient)?;
     config.save(config::GitConfigSaveableLevel::Repo)?;
 
     let out_vars = vec!(("project_id".to_string(), project_id.to_string())).into_iter();

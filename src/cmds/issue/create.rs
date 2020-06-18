@@ -78,7 +78,7 @@ fn interactive_issue_builder<'a>(
     let description = Editor::new()
         .extension(".md")
         .require_save(true)
-        .edit("<!-- insert issue description here (markdown supported) -- save and quit when done -->")?;
+        .edit("<!-- insert issue description here (markdown supported) - save and quit when done -->")?;
     if let Some(desc) = description {
         i.description(desc);
     }
@@ -121,12 +121,47 @@ fn interactive_issue_builder<'a>(
         .interact()?;
 
     if !labels.is_empty() {
-        i.labels( labels.iter().map(|x| config.labels[*x].clone()).collect::<Vec<String>>() );
+        i.labels(
+            labels
+            .iter()
+            .map(|x| config.labels[*x].clone())
+            .collect::<Vec<String>>()
+        );
     }
 
     debug!("labels: {:#?}", labels);
 
-    //TODO: add assignee, and milestone selectors
+    let assignees = MultiSelect::new()
+        .with_prompt("Assignee(s)")
+        .items(
+            &config.members
+            .iter()
+            .map(|s| 
+                s.split(':')
+                .collect::<Vec<&str>>()[1]
+            )
+            .collect::<Vec<&str>>()
+        )
+        .interact()?;
+
+    if !assignees.is_empty() {
+        i.assignee_ids(
+            assignees
+            .iter()
+            .map(|x|
+                config.members[*x]
+                .clone()
+                .split(':')
+                .collect::<Vec<&str>>()[0]
+                .parse::<u64>()
+                .unwrap()
+                )
+        );
+    }
+
+    debug!("assignees: {:#?}", assignees);
+
+    //TODO: add milestone selectors
 
     i.build()
         .map_err(|e| anyhow!("Could not construct query to post issue to server.\n {}",e))
