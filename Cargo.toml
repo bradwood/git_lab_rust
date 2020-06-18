@@ -14,7 +14,7 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0"
-dialoguer = "0.5"
+dialoguer = "0.6"
 git2 = "0.13"
 gitlab = "0.1300"
 lazy_static = "1.4"
