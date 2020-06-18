@@ -68,10 +68,11 @@ to use. If this is not set, on Linux, it will try `xdg-open(1)`",
             )
             .subcommand(
                 clap::SubCommand::with_name("attach")
-                    .about("Attaches a GitLab project to a local repo")
+                    .about("Attaches a GitLab project to a local repo and (re)hydrates local project data cache")
                     .setting(clap::AppSettings::ColoredHelp)
+                    .visible_alias("refresh")
                     .arg(
-                        clap::Arg::with_name("id")
+                        clap::Arg::with_name("project_id")
                             .short("p")
                             .long("project_id")
                             .help("Project ID to attach")
@@ -80,16 +81,19 @@ to use. If this is not set, on Linux, it will try `xdg-open(1)`",
                             .validator(validator::check_u64)
                     )
                     .after_help(
-"Attaching to a project makes a permanent configuration change to the local repo using standard \
-git-config(1) machinery to associate a GitLab project to a local repo. Subsequent commands that are \
-invoked in a project context can then use the attached project's identifier when they are invoked.\
+"Attaching/refreshing makes a permanent configuration change to the local repo using standard \
+git-config(1) machinery. It associates the local repo with a GitLab project and caches project \
+metadata locally. Subsequent commands that are invoked in a project context can then use the
+attached project's identifier and cached metadata when they are invoked.\
 \n
-If the project ID is passed it will be attached without verification against the GitLab server; \
-if not, the command will try to infer which project to attach to by checking if a git remote is \
-configured at the the GitLab host. If one is it will attempt to attach to it.\
+If the project ID is passed it will be attached without verification against the GitLab server and \
+used to hydrate the cache. If not, the command will try to infer which project to attach to by \
+matching a locally configured git remote with any project with the same remote configured on the \
+server. If a match is found it will be attached and used to populate or refresh the local metadata \
+cache.\
 \n
-If invoked outside the context of a local repo, the command will fail.",
-                    ),
+Specific project metadata that is cached includes project member usernames and labels. If invoked \
+outside the context of a local repo, the command will fail.",),
             )
             .subcommand(
                 clap::SubCommand::with_name("create")

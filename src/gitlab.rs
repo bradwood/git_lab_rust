@@ -20,6 +20,8 @@ pub use gitlab::api::projects::issues::Issue;
 pub use gitlab::api::projects::issues::IssueBuilder;
 pub use gitlab::api::projects::issues::CreateIssue;
 pub use gitlab::api::projects::issues::CreateIssueBuilder;
+pub use gitlab::api::projects::labels::Labels;
+pub use gitlab::api::projects::labels::LabelsBuilder;
 
 pub use gitlab::api::common::EnableState;
 pub use gitlab::api::common::VisibilityLevel;
