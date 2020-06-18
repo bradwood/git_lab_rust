@@ -75,6 +75,8 @@ pub struct Config {
     pub repo_path: Option<PathBuf>, //convenience param, not saved with ::save()
     pub user_config_type: Option<UserGitConfigLevel>, //convenience param, not saved with ::save()
     pub projectid: Option<u64>, //set with project attach command
+    pub labels: Vec<String>, //project labels for attached project
+    pub members: Vec<String>, //project members formatted as "id:username"
 }
 
 /// Open System, XDG and Global multi-level config or return empty config.
@@ -126,6 +128,8 @@ fn update_config_from_git(config: &mut Config, git_config: &GitConfig) {
                 ),
             "gitlab.format" => config.format = entry.value().unwrap().to_string().parse::<OutputFormat>().ok(),
             "gitlab.projectid" => config.projectid = Some(entry.value().unwrap().parse::<u64>().unwrap()),
+            "gitlab.label" =>  config.labels.push(entry.value().unwrap().to_string()),
+            "gitlab.member" =>  config.members.push(entry.value().unwrap().to_string()),
             _ => (),
         };
         trace!(
@@ -232,6 +236,27 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
             .context("Failed to save gitlab.projectid to git config.")?;
     }
 
+    if !config.labels.is_empty() {
+
+        save_config.remove_multivar("gitlab.label", ".*").ok();
+
+        for label in &config.labels {
+
+            save_config.set_multivar("gitlab.label", "^$", &label)
+                .context("Failed to save gitlab.label to git config.")?;
+        }
+    }
+
+    if !config.members.is_empty() {
+
+        save_config.remove_multivar("gitlab.member", ".*").ok();
+
+        for member in &config.members {
+
+            save_config.set_multivar("gitlab.member", "^$", &member)
+                .context("Failed to save gitlab.member to git config.")?;
+        }
+    }
     Ok(())
 }
 
@@ -247,6 +272,8 @@ impl Config {
             projectid: None,
             repo_path: None,
             user_config_type: None,
+            labels: vec!(),
+            members: vec!(),
         }
     }
 
@@ -389,21 +416,6 @@ mod config_unit_tests {
         std::fs::write(HOME.child(".config/git/config").path(),"").unwrap();
     }
 
-    // -- maybe_get_local_repo --
-
-    // #[test]
-    // fn test_get_local_repo_no_cwd() {
-    //     initialise();
-    //     let temp = assert_fs::TempDir::new().unwrap();
-    //     env::set_current_dir(temp.path()).unwrap();
-    //     temp.close().unwrap(); //delete current directory
-
-    //     let repo_path = maybe_get_local_repo();
-
-    //     // set up XDG and Global configs
-    //     assert!(repo_path.is_none());
-    // }
-
     #[test]
     fn test_get_local_repo_empty() {
         initialise();
@@ -423,22 +435,6 @@ mod config_unit_tests {
 
         assert!(repo_path.is_some());
     }
-
-    // -- maybe_open_local_config --
-
-    // #[test]
-    // fn test_open_local_config_no_cwd() {
-    //     initialise();
-    //     let temp = assert_fs::TempDir::new().unwrap();
-    //     env::set_current_dir(temp.path()).unwrap();
-    //     temp.close().unwrap(); //delete current directory
-
-    //     let no_cwd = maybe_open_local_config();
-
-    //     assert!(no_cwd.get_string("gitlab.host").is_err());
-    //     assert!(no_cwd.get_string("gitlab.token").is_err());
-    //     assert!(no_cwd.get_bool("gitlab.tls").is_err());
-    // }
 
     #[test]
     fn test_open_local_config_no_repo() {
@@ -683,7 +679,9 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
-            user_config_type: None
+            user_config_type: None,
+            labels: vec!(),
+            members: vec!(),
         };
 
         write_config(&mut git_config, &conf).unwrap();
@@ -714,7 +712,9 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
-            user_config_type: None
+            user_config_type: None,
+            labels: vec!(),
+            members: vec!(),
         };
 
         // delete the whole repo
@@ -742,7 +742,9 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
-            user_config_type: None
+            user_config_type: None,
+            labels: vec!(),
+            members: vec!(),
         };
 
         write_config(&mut git_config, &conf).unwrap();

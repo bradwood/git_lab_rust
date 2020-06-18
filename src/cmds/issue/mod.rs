@@ -83,7 +83,6 @@ try `xdg-open(1)`.",
                             .help("Issue title")
                             .takes_value(true)
                             .empty_values(false)
-                            .required(true)
                     )
                     .arg(
                         clap::Arg::with_name("project_id")
@@ -115,7 +114,7 @@ try `xdg-open(1)`.",
                             .takes_value(true)
                             .help("Associates the issue to a milestone")
                             .empty_values(false)
-                            .validator(validator::check_u64)
+                            .validator(validator::check_u32)
                     )
                     .arg(
                         clap::Arg::with_name("due_date")
@@ -133,7 +132,7 @@ try `xdg-open(1)`.",
                             .takes_value(true)
                             .help("Sets the weight of the issue")
                             .empty_values(false)
-                            .validator(validator::check_u64)
+                            .validator(validator::check_u32)
                     )
                     .arg(
                         clap::Arg::with_name("labels")
@@ -157,6 +156,9 @@ try `xdg-open(1)`.",
                             .require_delimiter(true)
                             .validator(validator::check_u64)
                     )
+                    .after_help(
+"If the title is is omitted then the user will be prompted for issue parameters interactively",
+                    ),
             )
     }
 

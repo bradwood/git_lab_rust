@@ -2,11 +2,14 @@
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
+use dialoguer::{Input, Editor, MultiSelect};
 use serde::Deserialize;
 
 use crate::config;
 use crate::config::OutputFormat;
 use crate::gitlab::{api, Client, CreateIssue, CreateIssueBuilder, Query};
+use crate::utils;
+use crate::utils::validator;
 
 #[derive(Debug, Deserialize)]
 struct Issue {
@@ -16,17 +19,12 @@ struct Issue {
 
 pub fn generate_issue_builder<'a>(
     args: &'a clap::ArgMatches,
-    config: &'a config::Config, 
+    config: &'a config::Config,
     i: &'a mut CreateIssueBuilder<'a>,
 ) -> Result<CreateIssue<'a>> {
 
-    match (config.projectid, args.value_of("project_id")) {
-        (None, Some(a_id)) => i.project(a_id),
-        (Some(c_id), None) => i.project(c_id),
-        (Some(_), Some(a_id)) => i.project(a_id),
-        (None, None) =>
-            return Err(anyhow!("No project ID passed and project not attached to the current repo. Run `git lab project attach`"))
-    };
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    i.project(project_id);
 
     for arg in &args.args {
         let (key, _) = arg;
@@ -51,6 +49,8 @@ pub fn generate_issue_builder<'a>(
 
             // list parameters
             "labels" => i.labels(args.values_of("labels").unwrap()),
+
+            // TODO add assignees
             // "assignees" => i.assignee_ids(args.values_of("assignees").unwrap()),
 
             _ => unreachable!(),
@@ -61,24 +61,129 @@ pub fn generate_issue_builder<'a>(
         .map_err(|e| anyhow!("Could not construct query to post issue to server.\n {}",e))
 }
 
+fn interactive_issue_builder<'a>(
+    args: &'a clap::ArgMatches,
+    config: &'a config::Config,
+    i: &'a mut CreateIssueBuilder<'a>,
+) -> Result<CreateIssue<'a>> {
+
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    i.project(project_id);
+
+    let title = Input::<String>::new()
+        .with_prompt("Title")
+        .interact()?;
+    i.title(title);
+
+    let description = Editor::new()
+        .extension(".md")
+        .require_save(true)
+        .edit("<!-- insert issue description here (markdown supported) - save and quit when done -->")?;
+    if let Some(desc) = description {
+        i.description(desc);
+    }
+
+    #[allow(clippy::redundant_closure)]  // below closure doesn't work unless called as shown below
+    let weight = Input::<String>::new()
+        .with_prompt("Weight")
+        .allow_empty(true)
+        .validate_with(|d: &str| validator::check_u32_or_empty(d))
+        .interact()?;
+    if !weight.is_empty() {
+        i.weight(
+            weight.parse::<u64>()
+            .unwrap()
+        );
+    }
+
+    let confidential = Input::<bool>::new()
+        .with_prompt("Confidential")
+        .default(false)
+        .interact()?;
+    i.confidential(confidential);
+
+    #[allow(clippy::redundant_closure)]  // below closure doesn't work unless called as shown below
+    let due_date = Input::<String>::new()
+        .with_prompt("Due date [YYYY-MM-DD]")
+        .allow_empty(true)
+        .validate_with(|d: &str| validator::check_yyyy_mm_dd_or_empty(d))
+        .interact()?;
+    if !due_date.is_empty() {
+        i.due_date(
+            NaiveDate::parse_from_str(&due_date, "%Y-%m-%d")
+            .unwrap()
+        );
+    }
+
+    let labels = MultiSelect::new()
+        .with_prompt("Label(s)")
+        .items(&config.labels[..])
+        .interact()?;
+
+    if !labels.is_empty() {
+        i.labels(
+            labels
+            .iter()
+            .map(|x| config.labels[*x].clone())
+            .collect::<Vec<String>>()
+        );
+    }
+
+    debug!("labels: {:#?}", labels);
+
+    let assignees = MultiSelect::new()
+        .with_prompt("Assignee(s)")
+        .items(
+            &config.members
+            .iter()
+            .map(|s| 
+                s.split(':')
+                .collect::<Vec<&str>>()[1]
+            )
+            .collect::<Vec<&str>>()
+        )
+        .interact()?;
+
+    if !assignees.is_empty() {
+        i.assignee_ids(
+            assignees
+            .iter()
+            .map(|x|
+                config.members[*x]
+                .clone()
+                .split(':')
+                .collect::<Vec<&str>>()[0]
+                .parse::<u64>()
+                .unwrap()
+                )
+        );
+    }
+
+    debug!("assignees: {:#?}", assignees);
+
+    //TODO: add milestone selectors
+
+    i.build()
+        .map_err(|e| anyhow!("Could not construct query to post issue to server.\n {}",e))
+}
+
 pub fn create_issue_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut i = CreateIssue::builder();
-    let endpoint = generate_issue_builder(&args, &config, &mut i)?;
+
+    let interactive = !args.is_present("title");
+
+    let endpoint = if !interactive {
+        generate_issue_builder(&args, &config, &mut i)?
+    } else {
+        interactive_issue_builder(&args, &config, &mut i)?
+    };
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
 
-    match config.format {
-        Some(OutputFormat::JSON) => {
-            let raw_json  = api::raw(endpoint)
-                .query(&gitlabclient)
-                .context("Failed to create issue")?;
+    match (&config.format, interactive) {
 
-            println!("{}", String::from_utf8(raw_json).unwrap());
-            Ok(())
-        },
-
-        Some(OutputFormat::Text) => {
+        (_, true) | (Some(OutputFormat::Text), _) => {
             let issue: Issue = endpoint
                 .query(&gitlabclient)
                 .context("Failed to create issue")?;
@@ -87,7 +192,17 @@ pub fn create_issue_cmd(args: clap::ArgMatches, config: config::Config, gitlabcl
             println!("Issue URL: {}", issue.web_url);
             Ok(())
         },
-        _ => Err(anyhow!("Bad output format in config")),
+
+        (Some(OutputFormat::JSON), _) => {
+            let raw_json  = api::raw(endpoint)
+                .query(&gitlabclient)
+                .context("Failed to create issue")?;
+
+            println!("{}", String::from_utf8(raw_json).unwrap());
+            Ok(())
+        },
+
+        (None, _) => Err(anyhow!("Bad output format in config")),
     }
 }
 

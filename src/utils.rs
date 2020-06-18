@@ -70,17 +70,50 @@ pub mod validator {
     use url::Url;
     use chrono::NaiveDate;
 
-    /// check for valid u64 int
-    pub fn check_u64(v: String) -> Result<(), String> {
-        if v.parse::<u64>().is_ok() {
+    /// check for valid u32 int, or empty string
+    pub fn check_u32_or_empty<S: Into<String>>(v: S) -> Result<(), String> {
+        let u = v.into();
+        if u.is_empty() {
+            Ok(())
+        } else {
+            check_u32(u)
+
+        }
+    }
+
+    /// check for valid u32 int
+    pub fn check_u32<S: Into<String>>(v: S) -> Result<(), String> {
+        let u = v.into();
+        if u.parse::<u32>().is_ok() {
             return Ok(());
         }
-        Err(String::from("The value is not a positive integer"))
+        Err(String::from("The value is not a positive 32-bit integer"))
+    }
+
+    /// check for valid u64 int
+    pub fn check_u64<S: Into<String>>(v: S) -> Result<(), String> {
+        let u = v.into();
+        if u.parse::<u64>().is_ok() {
+            return Ok(());
+        }
+        Err(String::from("The value is not a positive 64-bit integer"))
+    }
+
+    /// check for valid chrono::NaiveDate string, or an empty one
+    pub fn check_yyyy_mm_dd_or_empty<S: Into<String>>(v: S) -> Result<(), String> {
+        let u = v.into();
+        if u.is_empty() {
+            Ok(())
+        } else {
+            check_yyyy_mm_dd(u)
+
+        }
     }
 
     /// check for valid chrono::NaiveDate string
-    pub fn check_yyyy_mm_dd(v: String) -> Result<(), String> {
-        if NaiveDate::parse_from_str(&v, "%Y-%m-%d").is_ok() {
+    pub fn check_yyyy_mm_dd<S: Into<String>>(v: S) -> Result<(), String> {
+        let u = v.into();
+        if NaiveDate::parse_from_str(&u, "%Y-%m-%d").is_ok() {
             return Ok(());
         }
         Err(String::from("The value is not date of form YYYY-MM-YY"))
@@ -147,13 +180,78 @@ mod validator_unit_tests {
     }
 
     #[test]
+    fn test_check_yyyy_mm_dd_or_empty() {
+        let v = check_yyyy_mm_dd_or_empty("brad");
+        assert!(v.is_err());
+        let v = check_yyyy_mm_dd_or_empty(String::from("brad"));
+        assert!(v.is_err());
+        let v = check_yyyy_mm_dd_or_empty(String::from("-345"));
+        assert!(v.is_err());
+
+        let v = check_yyyy_mm_dd_or_empty(String::from("1943-12-22"));
+        assert!(v.is_ok());
+        let v = check_yyyy_mm_dd_or_empty("1943-12-22");
+        assert!(v.is_ok());
+        let v = check_yyyy_mm_dd_or_empty(String::from(""));
+        assert!(v.is_ok());
+        let v = check_yyyy_mm_dd_or_empty("");
+        assert!(v.is_ok());
+    }
+
+    #[test]
     fn test_check_yyyy_mm_dd() {
+        let v = check_yyyy_mm_dd("brad");
+        assert!(v.is_err());
         let v = check_yyyy_mm_dd(String::from("brad"));
         assert!(v.is_err());
         let v = check_yyyy_mm_dd(String::from("-345"));
         assert!(v.is_err());
 
         let v = check_yyyy_mm_dd(String::from("1943-12-22"));
+        assert!(v.is_ok());
+        let v = check_yyyy_mm_dd("1943-12-22");
+        assert!(v.is_ok());
+    }
+
+    #[test]
+    fn test_check_u32_or_empty() {
+        let v = check_u32_or_empty(String::from("brad"));
+        assert!(v.is_err());
+        let v = check_u32_or_empty(String::from("-345"));
+        assert!(v.is_err());
+
+        let v = check_u32_or_empty(String::from("345"));
+        assert!(v.is_ok());
+        let v = check_u32_or_empty(String::from(""));
+        assert!(v.is_ok());
+
+        let v = check_u32_or_empty("brad");
+        assert!(v.is_err());
+        let v = check_u32_or_empty("-345");
+        assert!(v.is_err());
+
+        let v = check_u32_or_empty("345");
+        assert!(v.is_ok());
+        let v = check_u32_or_empty("");
+        assert!(v.is_ok());
+    }
+
+    #[test]
+    fn test_check_u32() {
+        let v = check_u32(String::from("brad"));
+        assert!(v.is_err());
+        let v = check_u32(String::from("-345"));
+        assert!(v.is_err());
+
+        let v = check_u32(String::from("345"));
+        assert!(v.is_ok());
+
+        let v = check_u32("brad");
+        assert!(v.is_err());
+        let v = check_u32("-345");
+        assert!(v.is_err());
+
+        let v = check_u32("345");
         assert!(v.is_ok());
     }
 
@@ -165,6 +263,14 @@ mod validator_unit_tests {
         assert!(v.is_err());
 
         let v = check_u64(String::from("345"));
+        assert!(v.is_ok());
+
+        let v = check_u64("brad");
+        assert!(v.is_err());
+        let v = check_u64("-345");
+        assert!(v.is_err());
+
+        let v = check_u64("345");
         assert!(v.is_ok());
     }
 

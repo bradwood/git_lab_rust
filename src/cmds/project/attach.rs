@@ -8,8 +8,12 @@ use git2::Repository;
 use graphql_client::GraphQLQuery;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::Deserialize;
 
 use crate::config;
+use crate::gitlab::Labels as GLLabels;
+use crate::gitlab::ProjectMembers as GLMembers;
+use crate::gitlab::Query;
 use crate::gitlab;
 use crate::utils;
 
@@ -63,7 +67,7 @@ fn get_search_param_and_remote_type(url: &str) -> (RemoteType, String) {
 }
 
 /// Get list of remote-pairs from server which match search string
-fn get_remotes_from_server(search_str: &str, gitlabclient: gitlab::Client) -> Result<projects_with_remotes::ResponseData> {
+fn get_remotes_from_server(search_str: &str, gitlabclient: &gitlab::Client) -> Result<projects_with_remotes::ResponseData> {
     let query_body = ProjectsWithRemotes::build_query(
         projects_with_remotes::Variables {
             search_str: search_str.to_string(),
@@ -105,7 +109,7 @@ fn find_project_id(r_type: RemoteType, url: &str, remotes: projects_with_remotes
 }
 
 /// Look up the project ID on the GitLab server from a git remote url.
-fn get_proj_id_by_remote(url: &str, gitlabclient: gitlab::Client) -> Result<u64> {
+fn get_proj_id_by_remote(url: &str, gitlabclient: &gitlab::Client) -> Result<u64> {
     trace!("url: {:#?}", url);
 
     let (r_type, search_str) = get_search_param_and_remote_type(url);
@@ -118,21 +122,64 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: gitlab::Client) -> Result<u64>
     Ok(p_id)
 }
 
+fn get_project_members(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
+    let mut members_builder = GLMembers::builder();
+    let endpoint = members_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
+
+    debug!("endpoint: {:#?}", endpoint);
+
+    #[derive(Deserialize, Debug)]
+    struct Member {
+        id: u64,
+        username: String
+    }
+
+    let members: Vec<Member> = endpoint
+        .query(gitlabclient)
+        .context("Failed to query project members")?;
+
+    debug!("members: {:#?}", members);
+    Ok(members.iter().map(|m| format!("{}:{}", m.id.to_string(), m.username.clone())).collect())
+}
+
+fn get_project_labels(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
+    let mut labels_builder = GLLabels::builder();
+    let endpoint = labels_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project labels from server.\n {}",e))?;
+
+    debug!("endpoint: {:#?}", endpoint);
+
+    #[derive(Deserialize, Debug)]
+    struct Label {
+        name: String
+    }
+
+    let labels: Vec<Label> = endpoint
+        .query(gitlabclient)
+        .context("Failed to query project labels")?;
+
+    debug!("labels: {:#?}", labels);
+    Ok(labels.iter().map(|l| l.name.clone()).collect())
+}
+
 pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gitlabclient: gitlab::Client) -> Result<()> {
     // if not inside local repo error and exit
     config.repo_path.as_ref().ok_or_else(|| anyhow!("Local repo not found. Are you in the correct directory?"))?;
 
+    debug!("config: {:#?}", &config);
+
     let project_id = match (&get_git_remote(&config), args) {
-        (Some(r), a) if !a.is_present("name") && !a.is_present("id") => {
-            get_proj_id_by_remote(r, gitlabclient)
+        (Some(r), a) if !a.is_present("project_id") => {
+            get_proj_id_by_remote(r, &gitlabclient)
                 .with_context(|| format!("Could not look up GitLab project using 'origin' remote '{}'", r))
                 .context("
 Your GitLab server is probably not at a version with decent GraphQL support. You can work round \
 this by manually obtaining the project's ID from the GUI and adding it to your repo's config like so: \n\n\
-    git config --local --add gitlab.projectid <project_id>")
+    git lab project attach -p <project_id>")
         },
-        (_, a) if a.is_present("id") => {
-            a.value_of("id").unwrap().parse::<u64>().map_err(|e| anyhow!(e))
+        (_, a) if a.is_present("project_id") => {
+            a.value_of("project_id").unwrap().parse::<u64>().map_err(|e| anyhow!(e))
         },
         (r, a) => {
             trace!("remote_url: {:#?}", r);
@@ -141,6 +188,8 @@ this by manually obtaining the project's ID from the GUI and adding it to your r
         }
     }?;
     config.projectid = Some(project_id);
+    config.labels = get_project_labels(project_id, &gitlabclient)?;
+    config.members = get_project_members(project_id, &gitlabclient)?;
     config.save(config::GitConfigSaveableLevel::Repo)?;
 
     let out_vars = vec!(("project_id".to_string(), project_id.to_string())).into_iter();
@@ -180,7 +229,7 @@ mod project_attach_unit_tests {
 
     #[rstest(
     pid, r_type, url, remotes,
-    case(23456, RemoteType::HTTP, "https://gitlab.com:one/two/four.git", 
+    case(23456, RemoteType::HTTP, "https://gitlab.com:one/two/four.git",
         projects_with_remotes::ResponseData {
             projects:
                 Some(
@@ -208,7 +257,7 @@ mod project_attach_unit_tests {
                 )
         }
     ),
-    case(12345, RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git", 
+    case(12345, RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git",
         projects_with_remotes::ResponseData {
             projects:
                 Some(
@@ -242,7 +291,7 @@ mod project_attach_unit_tests {
     }
     #[rstest(
     r_type, url, remotes,
-    case(RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git", 
+    case(RemoteType::SSH, "ssh://git@gitlab.com:one/two/three.git",
         projects_with_remotes::ResponseData {
             projects:
                 Some(
@@ -258,7 +307,7 @@ mod project_attach_unit_tests {
     )]
     fn test_find_project_id_bad(r_type: RemoteType, url: &str, remotes: projects_with_remotes::ResponseData) {
         assert!(
-            find_project_id(r_type, url, remotes).is_err(), 
+            find_project_id(r_type, url, remotes).is_err(),
         );
     }
 }
