@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -ex
 
 baseurl="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}"
 fullname="${TARBALL}"
