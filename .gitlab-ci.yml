@@ -9,16 +9,20 @@ stages:
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
 
-cache:
-  paths:
-    - target/
-    - .cargo/
+# cache:
+#   paths:
+#     - target/
+#     - .cargo/
 
 before_script:
   - rustup --version
 
 lint:
   stage: lint
+  cache:
+    paths:
+      - target/
+      - .cargo/
   script:
     - just lint
   only:
@@ -26,6 +30,10 @@ lint:
 
 test:
   stage: test
+  cache:
+    paths:
+      - target/
+      - .cargo/
   script:
     - just tarp
   artifacts:
@@ -38,6 +46,10 @@ test:
 
 publish to crates.io:
   stage: publish
+  cache:
+    paths:
+      - target/
+      - .cargo/
   only:
     - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
   except:
@@ -65,7 +77,7 @@ build musl package:
     - cp README.md ${BUILD_DIR}
     - tar zcvf ${BUILD_DIR}.tar.gz ${BUILD_DIR}
   artifacts:
-    expose_as: musl binary
-    untracked: true
+    # expose_as: musl binary
+    # untracked: true
     paths:
-      - ${BUILD_DIR}.tar.gz
+      - git_lab_cli*.tar.gz
