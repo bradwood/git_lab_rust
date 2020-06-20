@@ -64,8 +64,7 @@ build musl package:
     - cp LICENSE ${BUILD_DIR}
     - cp README.md ${BUILD_DIR}
     - tar zcvf ${BUILD_DIR}.tar.gz ${BUILD_DIR}
-    - ls -la
   artifacts:
     expose_as: musl binary
     paths:
-      - ${BUILD_DIR}.tar.gz
+      - *.tar.gz
