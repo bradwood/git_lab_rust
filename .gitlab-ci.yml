@@ -4,6 +4,7 @@ stages:
   - lint
   - test
   - publish
+  - release
 
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
@@ -43,3 +44,9 @@ publish:
     # check that the git tag semver string is the same as the string in Cargo.toml
     - test $(grep version Cargo.toml| head -1 | cut -f3 -d\ ) = \"$CI_COMMIT_TAG\"
     - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty
+
+release:
+  image: registry.gitlab.com/rust_musl_docker/image:stable-latest
+  stage: release
+  script:
+	  - cargo build --release --target=x86_64-unknown-linux-musl

@@ -48,6 +48,7 @@ tarp:
 branch := `git rev-parse --abbrev-ref HEAD`
 last_tag := `git tag | tail -1`
 cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
+pwd := `pwd`
 
 # bump minor version and tag
 bump-major:
@@ -66,3 +67,13 @@ bump-patch:
 	test {{branch}} == "master"
 	test {{last_tag}} == {{cargo_ver}}
 	cargo bump patch --git-tag
+
+
+musl:
+	docker run -it --rm \
+	-v {{pwd}}:/workdir \
+	-v ~/.cargo/git:/root/.cargo/git \
+	-v ~/.cargo/registry:/root/.cargo/registry \
+	registry.gitlab.com/rust_musl_docker/image:stable-latest \
+	cargo build --release --target=x86_64-unknown-linux-musl
+
