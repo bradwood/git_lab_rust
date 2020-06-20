@@ -11,6 +11,7 @@ homepage = "https://gitlab.com/bradwood/git-lab-rust"
 keywords = ["git", "Gitlab", "cli"]
 categories = ["development-tools", "command-line-utilities"]
 license = "MIT"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
@@ -50,6 +51,9 @@ lazy_static = "1.4"
 predicates = "1.0"
 rexpect = "0.3"
 rstest = "0.6"
+
+[build-dependencies]
+man = "0.3.0"
 
 [[bin]]
 name = "git-lab"
