@@ -46,7 +46,7 @@ publish:
     - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty
 
 release:
-  image: registry.gitlab.com/rust_musl_docker/image:stable-latest
   stage: release
+  image: registry.gitlab.com/rust_musl_docker/image:stable-latest
   script:
-	  - cargo build --release --target=x86_64-unknown-linux-musl
+    - cargo build --release --target=x86_64-unknown-linux-musl
