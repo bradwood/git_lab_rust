@@ -1,6 +1,6 @@
 //! [![pipeline status](https://gitlab.com/bradwood/git-lab-rust/badges/master/pipeline.svg)](https://gitlab.com/bradwood/git-lab-rust/-/commits/master)
-//! ![Crates.io](https://img.shields.io/crates/v/git_lab_cli)
-//! ![Crates.io](https://img.shields.io/crates/d/git_lab_cli)
+//! [![Crates.io](https://img.shields.io/crates/v/git_lab_cli)](https://crates.io/crates/git_lab_cli)
+//! [![Crates.io](https://img.shields.io/crates/d/git_lab_cli)](https://crates.io/crates/git_lab_cli)
 //!
 //! _ALPHA_ - what is here works, but functionality is still under active development.
 //!
