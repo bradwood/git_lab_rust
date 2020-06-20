@@ -1,4 +1,4 @@
-image: bradqwood/rust-build-docker:1.2.0
+image: bradqwood/rust-build-docker:1.3.1
 
 stages:
   - lint
@@ -9,9 +9,6 @@ stages:
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
 
-before_script:
-  - rustup --version
-
 lint:
   stage: lint
   cache:
@@ -19,6 +16,7 @@ lint:
       - target/
       - .cargo/
   script:
+    - rustup --version
     - just lint
   only:
     - branches
@@ -58,6 +56,7 @@ build musl package:
   except:
     - branches
   script:
+    - apt-get update -qq && apt-get -y -qq install jq
     - export BUILD_DIR=git_lab_cli-${CI_COMMIT_TAG}-x86_64-unknown-linux-musl
     - export TARBALL=${BUILD_DIR}.tar.gz
     - cargo build --release --target=x86_64-unknown-linux-musl
