@@ -12,17 +12,13 @@
 //!
 //! ## Current functions
 //!
-//!  * `init` -- initialise credentials aganst a remote GitLab server
-//!
+//!  * `init` -- initialise credentials against a remote GitLab server
 //!  * `project` -- interact with GitLab projects
-//!
 //!     * `project create` -- create project
 //!     * `project attach` -- associate a local repo with a project
 //!     * `project (open|view|browse)` -- open project's URL in browser
 //!     * `project (show|info|get)` -- show details about a project
-//!
 //!  * `issue` -- interact with issues
-//!
 //!     * `issue create` -- create issue (either entirely via cli-passed parameters, or
 //!        interactively, by prompting the user for the inputs needed)
 //!     * `issue (open|view|browse)` -- open issue's URL in browser
@@ -30,23 +26,9 @@
 //!
 //! ## Planned functions
 //!
-//!  * `project` -- interact with GitLab projects
-//!
-//!     * `project list` -- get list of projects
-//!
-//!  * `issue` -- interact with issues
-//!
-//!     * `issue list` -- get list of issues
-//!
+//!  * `project list` -- get list of projects
+//!  * `issue list` -- get list of issues
 //!  * `merge-request` -- interact with merge requests
-//!
-//!     * `merge-request create` -- create merge request
-//!     * `merge-request list` -- get list of merge requests
-//!     * `merge-request (open|view|browse)` -- open merge-request's URL in browser
-//!     * `merge-request (show|info|get)` -- show details about a merge-request
-//!     * `merge-request approve` -- approve merge request
-//!     * `merge-request merge` -- merge merge request
-//!
 //!  * `pipeline` -- interact with Gitlab CI jobs
 //!  * `group` -- interact with Gitlab groups
 //!  * `user` -- interact with Gitlab users
@@ -62,20 +44,26 @@
 //!  * JSON output in addition to plain text to allow for parsing with tools like `jq`
 //!  * Terminal-based markdown rendering
 //!  * `$EDITOR` integration on `create` commands
+//!  * `musl` binaries available [here](https://gitlab.com/bradwood/git-lab-rust/-/releases)
 //!
 //! ## Planned features
 //!
-//!  * `musl` and `glibc` binary packages
 //!  * support for various linux packaging tools like AUR, Deb, RPM, etc
 //!  * non-Linux support (maybe)
 //!
 //! # Installation
 //!
-//! For now, this is only available via `cargo` while under development. 
+//! ## Cargo
+//!
+//! To install via `cargo`:
 //!
 //! ```
 //! cargo install git_lab_cli
 //! ```
+//! ## Statically linked Linux binaries
+//!
+//! Grab a tarball for these [here](https://gitlab.com/bradwood/git-lab-rust/-/releases).
+//!
 //! # Compatibility
 //!
 //! Supports GitLab server version 13
