@@ -4,7 +4,7 @@ stages:
   - lint
   - test
   - publish
-  - release
+  - build
 
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
@@ -30,11 +30,13 @@ test:
     - just tarp
   artifacts:
     expose_as: coverage report
-    paths: [tarp/tarpaulin-report.html]
+    expire_in: 1 week
+    paths:
+      - tarp/tarpaulin-report.html
   only:
     - branches
 
-publish:
+publish to crates.io:
   stage: publish
   only:
     - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
@@ -45,8 +47,24 @@ publish:
     - test $(grep version Cargo.toml| head -1 | cut -f3 -d\ ) = \"$CI_COMMIT_TAG\"
     - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty
 
-release:
-  stage: release
+build musl package:
+  stage: build
   image: registry.gitlab.com/rust_musl_docker/image:stable-latest
+  # only:
+  #   - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
+  # except:
+  #   - branches
   script:
+    - export BUILD_DIR=git_lab_cli-${CI_COMMIT_TAG}-x86_64-unknown-linux-musl
     - cargo build --release --target=x86_64-unknown-linux-musl
+    - mkdir -p ${BUILD_DIR}/man
+    - find target/x86_64-unknown-linux-musl -type f -name 'git-lab' | xargs strip
+    - find target/x86_64-unknown-linux-musl -type f -name 'git-lab' | xargs -i cp -p {} ${BUILD_DIR}
+    - find target/x86_64-unknown-linux-musl -type f -name 'git-lab.1' | xargs -i cp -p {} ${BUILD_DIR}/man
+    - cp LICENSE ${BUILD_DIR}
+    - cp README.md ${BUILD_DIR}
+    - tar zcvf ${BUILD_DIR}.tar.gz ${BUILD_DIR}
+  artifacts:
+    expose_as: musl binary
+    paths:
+      - ${BUILD_DIR}.tar.gz
