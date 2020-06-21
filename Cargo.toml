@@ -35,6 +35,7 @@ crossterm = "0.17.5"
 colored = "1.9.3"
 chrono-humanize = "0.0.11"
 textwrap = "0.11.0"
+humantime = "2.0.1"
 
 [dependencies.clap]
 version = "2.33.0"
