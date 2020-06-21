@@ -14,11 +14,11 @@ use crate::utils::validator;
 
 /// This implements the `issue` command. It proves the ability to create, query and manipulate
 /// issues in GitLab.
-pub struct Issue<'a> {
+pub struct IssueCmd<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
 
-impl subcommand::SubCommand for Issue<'_> {
+impl subcommand::SubCommand for IssueCmd<'_> {
     fn gen_clap_command(&self) -> clap::App {
         let c = self.clap_cmd.clone();
         c.about("Creates, manipulates and queries issues")

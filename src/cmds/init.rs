@@ -9,11 +9,11 @@ use crate::subcommand;
 /// communicate with the server. See [`config`] for more details.
 ///
 /// [`config`]: ../../config/struct.Config.html
-pub struct Init<'a> {
+pub struct InitCmd<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
 
-impl subcommand::SubCommand for Init<'_> {
+impl subcommand::SubCommand for InitCmd<'_> {
     fn gen_clap_command(&self) -> clap::App {
         // TODO: figure out a way to get the borrow checker to work without `clone()`
         let c = self.clap_cmd.clone();

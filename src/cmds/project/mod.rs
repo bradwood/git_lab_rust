@@ -14,11 +14,11 @@ use crate::utils::validator;
 
 /// This implements the `project` command. It proves the ability to create, query and manipulate
 /// projects in GitLab.
-pub struct Project<'a> {
+pub struct ProjectCmd<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
 
-impl subcommand::SubCommand for Project<'_> {
+impl subcommand::SubCommand for ProjectCmd<'_> {
     fn gen_clap_command(&self) -> clap::App {
         let c = self.clap_cmd.clone();
         c.about("Creates, manipulates and queries projects")
