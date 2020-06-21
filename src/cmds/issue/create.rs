@@ -1,21 +1,14 @@
-
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
 use dialoguer::{Input, Editor, MultiSelect};
-use serde::Deserialize;
 
+use crate::cmds::issue::Issue;
 use crate::config;
 use crate::config::OutputFormat;
 use crate::gitlab::{api, Client, CreateIssue, CreateIssueBuilder, Query};
 use crate::utils;
 use crate::utils::validator;
-
-#[derive(Debug, Deserialize)]
-struct Issue {
-    id: u64,
-    web_url: String,
-}
 
 pub fn generate_issue_builder<'a>(
     args: &'a clap::ArgMatches,

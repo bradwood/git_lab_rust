@@ -1,16 +1,65 @@
-// mod create;
+mod create;
+mod list;
 mod open;
 mod show;
-mod create;
 
-use anyhow::Result;
-use anyhow::Context;
+use anyhow::{anyhow, Context, Result};
+use chrono::{DateTime, Utc, NaiveDate};
+use serde::Deserialize;
+use serde_json::{Map, Value};
 
 use crate::config;
+use crate::gitlab::Issue as GLIssue;
+use crate::gitlab::IssueBuilder;
 use crate::gitlab;
 use crate::subcommand;
 use crate::utils::validator;
+use crate::utils;
 
+#[derive(Debug, Deserialize)]
+pub struct Issue {
+    id: u64,
+    iid: u64,
+    project_id: u64,
+    title: String,
+    description: Option<String>,
+    state: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    closed_at: Option<DateTime<Utc>>,
+    closed_by: Option<Map<String, Value>>,
+    labels: Vec<String>,
+    milestone: Option<String>,
+    author: Map<String, Value>,
+    assignees: Option<Vec<Map<String, Value>>>,
+    user_notes_count: u64,
+    merge_requests_count: u64,
+    upvotes: u64,
+    downvotes: u64,
+    due_date: Option<NaiveDate>,
+    confidential: bool,
+    discussion_locked: Option<bool>,
+    web_url: String,
+    task_completion_status: Option<Map<String, Value>>,
+    weight: Option<u64>,
+    has_tasks: Option<bool>,
+    task_status: Option<String>,
+    references: Map<String, Value>,
+    subscribed: Option<bool>,
+}
+
+pub fn generate_basic_issue_builder<'a>(
+    args: &'a clap::ArgMatches,
+    config: &'a config::Config,
+    i: &'a mut IssueBuilder<'a>,
+) -> Result<GLIssue<'a>> {
+
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    i.project(project_id);
+    i.issue(args.value_of("id").unwrap().parse::<u64>().unwrap());
+    i.build()
+        .map_err(|e| anyhow!("Could not construct query to fetch project URL from server.\n {}",e))
+}
 
 /// This implements the `issue` command. It proves the ability to create, query and manipulate
 /// issues in GitLab.
