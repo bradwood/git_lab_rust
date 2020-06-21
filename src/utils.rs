@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 use serde_json::json;
 
@@ -64,11 +65,21 @@ pub fn find_git_root(starting_directory: &Path) -> Option<PathBuf> {
 
 /// various string validators used to ensure clap.rs args pass
 pub mod validator {
+    use chrono::NaiveDate;
     use git2::Reference;
+    use humantime::parse_duration;
     use lazy_static::*;
     use regex::Regex;
     use url::Url;
-    use chrono::NaiveDate;
+
+    /// check for valid human-friendly duration string
+    pub fn check_valid_humantime_duration<S: Into<String>>(dur: S) -> Result<(), String> {
+        let t = dur.into();
+        match parse_duration(&t) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
 
     /// check for valid u32 int, or empty string
     pub fn check_u32_or_empty<S: Into<String>>(v: S) -> Result<(), String> {
@@ -163,6 +174,21 @@ pub mod validator {
 #[cfg(test)]
 mod validator_unit_tests {
     use super::validator::*;
+
+    #[test]
+    fn test_check_humantime_duration() {
+        let v = check_valid_humantime_duration(String::from("34"));
+        assert!(v.is_err());
+        let v = check_valid_humantime_duration("43fdfk");
+        assert!(v.is_err());
+
+        let v = check_valid_humantime_duration(String::from("1year 3months"));
+        assert!(v.is_ok());
+        let v = check_valid_humantime_duration("2hr 30m");
+        assert!(v.is_ok());
+        let v = check_valid_humantime_duration("2years 30m");
+        assert!(v.is_ok());
+    }
 
     #[test]
     fn test_check_url() {
