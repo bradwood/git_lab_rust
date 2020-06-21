@@ -75,6 +75,183 @@ impl subcommand::SubCommand for IssueCmd<'_> {
             .setting(clap::AppSettings::VersionlessSubcommands)
             .setting(clap::AppSettings::SubcommandRequiredElseHelp)
             .subcommand(
+                clap::SubCommand::with_name("list")
+                    .about("Lists issues")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("state")
+                            .long("state")
+                            .short("s")
+                            .help("Filter issues by state")
+                            .takes_value(true)
+                            .possible_values(&["all", "closed", "opened"])
+                            .default_value("opened")
+                    )
+                    .arg(
+                        clap::Arg::with_name("scope")
+                            .long("scope")
+                            .short("m")
+                            .help("Filter issues by scope")
+                            .takes_value(true)
+                            .possible_values(&["created_by_me", "assigned_to_me"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("labels")
+                            .long("labels")
+                            .short("l")
+                            .help("Filter issues by label(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                            .conflicts_with_all(&["labelled", "unlabelled"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("unlabelled")
+                            .long("unlabelled")
+                            .help("Only return issues that have no labels")
+                    )
+                    .arg(
+                        clap::Arg::with_name("labelled")
+                            .long("labelled")
+                            .help("Only return issues that have any label")
+                    )
+                    .arg(
+                        clap::Arg::with_name("author")
+                            .long("author")
+                            .short("a")
+                            .help("Filter issues by author username")
+                            .takes_value(true)
+                            .empty_values(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("assignees")
+                            .long("assignees")
+                            .help("Filter issues which are assigned to as set of usernames")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                            .conflicts_with_all(&["assigned", "unassigned"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("unassigned")
+                            .long("unassigned")
+                            .help("Only return issues that are unassigned")
+                    )
+                    .arg(
+                        clap::Arg::with_name("assigned")
+                            .long("assigned")
+                            .help("Only return issues that are assigned")
+                    )
+                    .arg(
+                        clap::Arg::with_name("weight")
+                            .long("weight")
+                            .short("w")
+                            .help("Filter issues by weight")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_u32)
+                            .conflicts_with_all(&["weighted", "unweighted"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("weighted")
+                            .help("Only return issues that have a weight")
+                            .long("weighted")
+                    )
+                    .arg(
+                        clap::Arg::with_name("unweighted")
+                            .help("Only return issues that have no weight")
+                            .long("unweighted")
+                    )
+                    .arg(
+                        clap::Arg::with_name("filter")
+                            .long("filter")
+                            .short("f")
+                            .help("Filter issues by search string")
+                            .takes_value(true)
+                            .empty_values(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("created_after")
+                            .long("created_after")
+                            .short("c")
+                            .help("Fetch issues created after a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("created_before")
+                            .long("created_before")
+                            .short("C")
+                            .help("Fetch issues created before a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("updated_after")
+                            .long("updated_after")
+                            .short("u")
+                            .help("Fetch issues updated after a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("updated_before")
+                            .long("updated_before")
+                            .short("U")
+                            .help("Fetch issues updated before a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("confidential")
+                            .long("confidential")
+                            .short("p")
+                            .help("Fetch only confidential issues")
+                    )
+                    .arg(
+                        clap::Arg::with_name("order_by")
+                            .long("order_by")
+                            .short("o")
+                            .help("Order results by given field")
+                            .takes_value(true)
+                            .possible_values(
+                                &["created_on",
+                                "updated_on",
+                                "priority",
+                                "due_date",
+                                "relative_position",
+                                "label_priority",
+                                "milestone_date",
+                                "popularity",
+                                "weight",
+                                ])
+                            .default_value("created_on")
+                    )
+                    .arg(
+                        clap::Arg::with_name("descending")
+                            .long("desc")
+                            .short("D")
+                            .help("Sort results in descending order")
+                    )
+                    .arg(
+                        clap::Arg::with_name("ascending")
+                            .long("asc")
+                            .short("A")
+                            .help("Sort results in ascending order")
+                    )
+                    .after_help(
+"Note that the `_before` and `_after` fields take a duration string similar to `12y 3months 3weeks \
+9d 3hr 20sec`. You may use units of the long form: `years, months, days, weeks` etc, or the short \
+form: `y, M, d, h, m, s`."
+                    ),
+            )
+            .subcommand(
                 clap::SubCommand::with_name("show")
                     .about("Shows issue information in the terminal")
                     .visible_aliases(&["info", "get"])
@@ -222,6 +399,7 @@ try `xdg-open(1)`.",
             ("create", Some(a)) => create::create_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
+            ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
