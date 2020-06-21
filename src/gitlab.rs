@@ -18,6 +18,8 @@ pub use gitlab::api::projects::CreateProject;
 pub use gitlab::api::projects::CreateProjectBuilder;
 pub use gitlab::api::projects::issues::Issue;
 pub use gitlab::api::projects::issues::IssueBuilder;
+pub use gitlab::api::projects::issues::Issues;
+pub use gitlab::api::projects::issues::IssuesBuilder;
 pub use gitlab::api::projects::issues::CreateIssue;
 pub use gitlab::api::projects::issues::CreateIssueBuilder;
 pub use gitlab::api::projects::labels::Labels;
@@ -27,17 +29,56 @@ pub use gitlab::api::projects::members::ProjectMembersBuilder;
 
 pub use gitlab::api::common::EnableState;
 pub use gitlab::api::common::VisibilityLevel;
+pub use gitlab::api::common::SortOrder;
+
 pub use gitlab::api::projects::AutoDevOpsDeployStrategy;
 pub use gitlab::api::projects::FeatureAccessLevel;
 pub use gitlab::api::projects::FeatureAccessLevelPublic;
 pub use gitlab::api::projects::MergeMethod;
 pub use gitlab::api::projects::BuildGitStrategy;
 
+pub use gitlab::api::projects::issues::IssueState;
+pub use gitlab::api::projects::issues::IssueScope;
+pub use gitlab::api::projects::issues::IssueWeight;
+pub use gitlab::api::projects::issues::IssueOrderBy;
+
 use crate::config::Config;
 
 /// Misc converter functions used to convert string args to Gitlab types
 pub mod converter {
     use super::*;
+
+    pub fn issue_order_by_from_str(s: &str) -> Result<IssueOrderBy> {
+        match s {
+            "created_on" => Ok(IssueOrderBy::CreatedAt),
+            "updated_on" => Ok(IssueOrderBy::UpdatedAt),
+            "priority" => Ok(IssueOrderBy::Priority),
+            "due_date" => Ok(IssueOrderBy::DueDate),
+            "relative_position" => Ok(IssueOrderBy::RelativePosition),
+            "label_priority" => Ok(IssueOrderBy::LabelPriority),
+            "milestone_date" => Ok(IssueOrderBy::MilestoneDue),
+            "popularity" => Ok(IssueOrderBy::Popularity),
+            "weight" => Ok(IssueOrderBy::WeightFields),
+            _ => Err(anyhow!("Incorrect issue list ordering"))
+        }
+    }
+
+    pub fn issue_scope_from_str(s: &str) -> Result<IssueScope> {
+        match s {
+            "created_by_me" => Ok(IssueScope::CreatedByMe),
+            "assigned_to_me" => Ok(IssueScope::AssignedToMe),
+            "all" => Ok(IssueScope::All),
+            _ => Err(anyhow!("Incorrect issue scope"))
+        }
+    }
+
+    pub fn issue_state_from_str(s: &str) -> Result<IssueState> {
+        match s {
+            "opened" => Ok(IssueState::Opened),
+            "closed" => Ok(IssueState::Closed),
+            _ => Err(anyhow!("Incorrect issue state"))
+        }
+    }
 
     pub fn auto_devops_deploy_strategy_from_str(s: &str) -> Result<AutoDevOpsDeployStrategy> {
         match s {
@@ -132,6 +173,23 @@ mod gitlab_converter_unit_tests {
 
     #[rstest(
         s, t, f,
+        case("created_on", IssueOrderBy::CreatedAt, &issue_order_by_from_str),
+        case("updated_on", IssueOrderBy::UpdatedAt, &issue_order_by_from_str),
+        case("priority", IssueOrderBy::Priority, &issue_order_by_from_str),
+        case("due_date", IssueOrderBy::DueDate, &issue_order_by_from_str),
+        case("relative_position", IssueOrderBy::RelativePosition, &issue_order_by_from_str),
+        case("label_priority", IssueOrderBy::LabelPriority, &issue_order_by_from_str),
+        case("milestone_date", IssueOrderBy::MilestoneDue, &issue_order_by_from_str),
+        case("popularity", IssueOrderBy::Popularity, &issue_order_by_from_str),
+        case("weight", IssueOrderBy::WeightFields, &issue_order_by_from_str),
+
+        case("created_by_me", IssueScope::CreatedByMe, &issue_scope_from_str),
+        case("assigned_to_me", IssueScope::AssignedToMe, &issue_scope_from_str),
+        case("all", IssueScope::All, &issue_scope_from_str),
+
+        case("opened", IssueState::Opened, &issue_state_from_str),
+        case("closed", IssueState::Closed, &issue_state_from_str),
+
         case("continuous", AutoDevOpsDeployStrategy::Continuous, &auto_devops_deploy_strategy_from_str),
         case("manual", AutoDevOpsDeployStrategy::Manual, &auto_devops_deploy_strategy_from_str),
         case("timed_incremental", AutoDevOpsDeployStrategy::TimedIncremental, &auto_devops_deploy_strategy_from_str),
@@ -167,6 +225,9 @@ mod gitlab_converter_unit_tests {
 
     #[rstest(
         s,  f,
+        case("blah", &issue_order_by_from_str),
+        case("blah", &issue_scope_from_str),
+        case("blah", &issue_state_from_str),
         case("blah", &auto_devops_deploy_strategy_from_str),
         case("blah", &enable_state_from_str),
         case("blah", &pipeline_git_strategy_from_str),
