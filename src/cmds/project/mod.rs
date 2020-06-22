@@ -3,22 +3,51 @@ mod create;
 mod open;
 mod show;
 
-use anyhow::Result;
-use anyhow::Context;
+use anyhow::{anyhow, Result, Context};
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
+use serde_json::{Map, Value};
 
 use crate::config;
+use crate::gitlab::Project as GLProject;
+use crate::gitlab::ProjectBuilder;
 use crate::gitlab;
 use crate::subcommand;
 use crate::utils::validator;
+use crate::utils;
 
+#[derive(Debug, Deserialize)]
+pub struct Project {
+    id: u64,
+    owner: Map<String, Value>,
+    web_url: String,
+    created_at: DateTime<Utc>,
+    ssh_url_to_repo: String,
+    http_url_to_repo: String,
+    forks_count: u64,
+    star_count: u64,
+    visibility: String,
+}
+
+pub fn generate_basic_project_builder<'a>(
+    args: &'a clap::ArgMatches,
+    config: &'a config::Config,
+    p: &'a mut ProjectBuilder<'a>,
+) -> Result<GLProject<'a>> {
+
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    p.project(project_id);
+    p.build()
+        .map_err(|e| anyhow!("Could not construct query to fetch project URL from server.\n {}",e))
+}
 
 /// This implements the `project` command. It proves the ability to create, query and manipulate
 /// projects in GitLab.
-pub struct Project<'a> {
+pub struct ProjectCmd<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
 
-impl subcommand::SubCommand for Project<'_> {
+impl subcommand::SubCommand for ProjectCmd<'_> {
     fn gen_clap_command(&self) -> clap::App {
         let c = self.clap_cmd.clone();
         c.about("Creates, manipulates and queries projects")

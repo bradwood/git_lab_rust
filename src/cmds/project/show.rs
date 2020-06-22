@@ -1,27 +1,11 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Local, Utc};
+use chrono::{Local};
 
-use serde::Deserialize;
-use serde_json::{Map, Value};
-
-use crate::config;
+use crate::cmds::project::{generate_basic_project_builder, Project};
 use crate::config::OutputFormat;
-use crate::gitlab::{api, Client, Query};
+use crate::config;
 use crate::gitlab::Project as GLProject;
-use crate::cmds::project::open;
-
-#[derive(Debug, Deserialize)]
-struct Project {
-    id: u64,
-    owner: Map<String, Value>,
-    web_url: String,
-    created_at: DateTime<Utc>,
-    ssh_url_to_repo: String,
-    http_url_to_repo: String,
-    forks_count: u64,
-    star_count: u64,
-    visibility: String,
-}
+use crate::gitlab::{api, Client, Query};
 
 fn print_project(p: Project) {
     println!("ID: {}", p.id);
@@ -38,7 +22,7 @@ fn print_project(p: Project) {
 
 pub fn show_project_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLProject::builder();
-    let endpoint = open::generate_project_builder(&args, &config, &mut p)?;
+    let endpoint = generate_basic_project_builder(&args, &config, &mut p)?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);

@@ -2,11 +2,11 @@ use crate::config;
 use crate::subcommand;
 use anyhow::Result;
 
-pub struct MergeRequest<'a> {
+pub struct MergeRequestCmd<'a> {
     pub clap_cmd: clap::App<'a, 'a>,
 }
 
-impl subcommand::SubCommand for MergeRequest<'_> {
+impl subcommand::SubCommand for MergeRequestCmd<'_> {
     fn gen_clap_command(&self) -> clap::App {
         // TODO: figure out a way to get the borrow checker to work without `clone()`
         let c = self.clap_cmd.clone();

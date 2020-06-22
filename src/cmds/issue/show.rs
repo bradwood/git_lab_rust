@@ -1,51 +1,18 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::prelude::*;
+use chrono::Utc;
+use chrono::offset::TimeZone;
 use chrono_humanize::HumanTime;
 use colored::*;
 use lazy_static::*;
 use regex::Regex;
-use serde::Deserialize;
-use serde_json::{Map, Value};
 use termimad::*;
 use textwrap::{indent, fill, termwidth};
 
-use crate::config;
+use crate::cmds::issue::{generate_basic_issue_builder, Issue};
 use crate::config::OutputFormat;
-use crate::gitlab::{api, Client, Query};
+use crate::config;
 use crate::gitlab::Issue as GLIssue;
-use crate::cmds::issue::open;
-
-#[derive(Debug, Deserialize)]
-struct Issue {
-    id: u64,
-    iid: u64,
-    project_id: u64,
-    title: String,
-    description: Option<String>,
-    state: String,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-    closed_at: Option<DateTime<Utc>>,
-    closed_by: Option<Map<String, Value>>,
-    labels: Vec<String>,
-    milestone: Option<String>,
-    author: Map<String, Value>,
-    assignees: Option<Vec<Map<String, Value>>>,
-    user_notes_count: u64,
-    merge_requests_count: u64,
-    upvotes: u64,
-    downvotes: u64,
-    due_date: Option<NaiveDate>,
-    confidential: bool,
-    discussion_locked: Option<bool>,
-    web_url: String,
-    task_completion_status: Option<Map<String, Value>>,
-    weight: Option<u64>,
-    has_tasks: Option<bool>,
-    task_status: Option<String>,
-    references: Map<String, Value>,
-    subscribed: Option<bool>,
-}
+use crate::gitlab::{api, Client, Query};
 
 fn print_issue(i: Issue) {
     let mut skin = MadSkin::default();
@@ -157,7 +124,7 @@ fn print_issue(i: Issue) {
         print!("{}", indent(&fill(&label_str, termwidth() - 12), "         ").italic());
     }
 
-    println!("\n");
+    println!();
 
     // print the entire issue description
     if i.description.is_some() {
@@ -179,7 +146,7 @@ fn print_issue(i: Issue) {
 
 pub fn show_issue_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLIssue::builder();
-    let endpoint = open::generate_issue_builder(&args, &config, &mut p)?;
+    let endpoint = generate_basic_issue_builder(&args, &config, &mut p)?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);

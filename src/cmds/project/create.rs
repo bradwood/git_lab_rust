@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use anyhow::{anyhow, Context, Result};
 use clap::value_t_or_exit;
-use serde::Deserialize;
 
 use crate::gitlab::converter::{
     auto_devops_deploy_strategy_from_str, enable_state_from_str, feature_access_level_from_str,
@@ -12,12 +11,7 @@ use crate::gitlab::converter::{
 use crate::config;
 use crate::config::OutputFormat;
 use crate::gitlab::{api, Client, CreateProject, CreateProjectBuilder, Query};
-
-#[derive(Debug, Deserialize)]
-struct Project {
-    id: u64,
-    web_url: String,
-}
+use crate::cmds::project::Project;
 
 pub fn generate_project_builder<'a>(
     args: &'a clap::ArgMatches,
@@ -190,7 +184,7 @@ mod project_create_unit_tests {
         // GIVEN
         let mut p = CreateProject::builder();
 
-        let p_cmd = project::Project {
+        let p_cmd = project::ProjectCmd {
             clap_cmd: ClapSubCommand::with_name("project"),
         };
 

@@ -115,16 +115,16 @@ fn main() -> Result<()> {
     //TODO: refactor this at some point...
     let cli_commands = subcommand::ClapCommands {
         commands: vec![
-            Box::new(init::Init {
+            Box::new(init::InitCmd {
                 clap_cmd: clap::SubCommand::with_name("init"),
             }),
-            Box::new(merge_request::MergeRequest {
+            Box::new(merge_request::MergeRequestCmd {
                 clap_cmd: clap::SubCommand::with_name("merge-request"),
             }),
-            Box::new(issue::Issue {
+            Box::new(issue::IssueCmd {
                 clap_cmd: clap::SubCommand::with_name("issue"),
             }),
-            Box::new(project::Project {
+            Box::new(project::ProjectCmd {
                 clap_cmd: clap::SubCommand::with_name("project"),
             }),
         ],
