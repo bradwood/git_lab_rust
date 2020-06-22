@@ -245,6 +245,15 @@ impl subcommand::SubCommand for IssueCmd<'_> {
                             .short("A")
                             .help("Sort results in ascending order")
                     )
+                    .arg(
+                        clap::Arg::with_name("max")
+                            .long("max")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .default_value("40")
+                            .help("Maximum records to return")
+                            .validator(validator::check_u32)
+                    )
                     .after_help(
 "Note that the `_before` and `_after` fields take a duration string similar to `12y 3months 3weeks \
 9d 3hr 20sec`. You may use units of the long form: `years, months, days, weeks` etc, or the short \

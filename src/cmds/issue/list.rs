@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use chrono::{Duration, Utc};
+use chrono_humanize::HumanTime;
 use clap::value_t_or_exit;
+use comfy_table::*;
 use humantime::parse_duration;
 
 use crate::cmds::issue::Issue;
@@ -23,7 +25,6 @@ pub fn generate_issues_builder<'a>(
     config: &'a config::Config,
     i: &'a mut IssuesBuilder<'a>,
 ) -> Result<Issues<'a>> {
-
     let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
     i.project(project_id);
 
@@ -56,14 +57,45 @@ pub fn generate_issues_builder<'a>(
             }
             "descending" => i.sort(SortOrder::Descending),
             "ascending" => i.sort(SortOrder::Ascending),
+            "max" => i,
             _ => unreachable!(),
         };
     }
     i.build()
-        .map_err(|e| anyhow!("Could not construct issues query from server.\n {}",e))
+        .map_err(|e| anyhow!("Could not construct issues query from server.\n {}", e))
 }
 
-//TODO: Handle pagination/records returned
+fn print_issues(issues: Vec<Issue>) {
+    let mut table = Table::new();
+    table
+        .load_preset("                   ")
+        .set_content_arrangement(ContentArrangement::Dynamic);
+
+    for i in issues {
+        let create_date  = format!("{}", HumanTime::from(i.created_at));
+
+        let id = if i.state == "opened" {
+            Cell::new(i.iid).add_attribute(Attribute::Bold).fg(Color::Blue)
+        } else {
+            Cell::new(i.iid).add_attribute(Attribute::Dim).fg(Color::Blue)
+        };
+
+        let title = if i.state == "opened" {
+            Cell::new(i.title)
+        } else {
+            Cell::new(i.title).add_attribute(Attribute::Dim)
+        };
+
+        table.add_row(vec![
+            id,
+            title,
+            Cell::new("about ".to_string() + &create_date).add_attribute(Attribute::Dim),
+        ]);
+    }
+    println!("{}", table);
+}
+
+
 pub fn list_issues_cmd(
     args: clap::ArgMatches,
     config: config::Config,
@@ -71,27 +103,28 @@ pub fn list_issues_cmd(
 ) -> Result<()> {
     let mut i = Issues::builder();
     let endpoint = generate_issues_builder(&args, &config, &mut i)?;
+    let max = value_t_or_exit!(args, "max", u32);
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
 
     match config.format {
         Some(OutputFormat::JSON) => {
-            let raw_json = api::raw(endpoint).query(&gitlabclient).context(
-                "Failed to query issues",
-            )?;
+            let raw_json = api::raw(endpoint)
+                .query(&gitlabclient)
+                .context("Failed to query issues")?;
 
             println!("{}", String::from_utf8(raw_json).unwrap());
             Ok(())
         }
 
         Some(OutputFormat::Text) => {
-            let issues: Vec<Issue> = endpoint.query(&gitlabclient).context(
-                "Failed to query issues",
-            )?;
+            let issues: Vec<Issue> = api::paged(endpoint, api::Pagination::Limit(max as usize))
+                .query(&gitlabclient)
+                .context("Failed to query issues")?;
 
-            println!("Issue id: {}", issues[0].id);
-            println!("Issue URL: {}", issues[0].web_url);
+            print_issues(issues);
+
             Ok(())
         }
         _ => Err(anyhow!("Bad output format in config")),

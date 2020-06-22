@@ -124,7 +124,7 @@ fn print_issue(i: Issue) {
         print!("{}", indent(&fill(&label_str, termwidth() - 12), "         ").italic());
     }
 
-    println!("\n");
+    println!();
 
     // print the entire issue description
     if i.description.is_some() {
