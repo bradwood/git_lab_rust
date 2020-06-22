@@ -23,11 +23,11 @@
 //!        interactively, by prompting the user for the inputs needed)
 //!     * `issue (open|view|browse)` -- open issue's URL in browser
 //!     * `issue (show|info|get)` -- show details about a issue
+//!     * `issue list` -- get list of issues
 //!
 //! ## Planned functions
 //!
 //!  * `project list` -- get list of projects
-//!  * `issue list` -- get list of issues
 //!  * `merge-request` -- interact with merge requests
 //!  * `pipeline` -- interact with Gitlab CI jobs
 //!  * `group` -- interact with Gitlab groups
