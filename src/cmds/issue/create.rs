@@ -124,6 +124,7 @@ fn interactive_issue_builder<'a>(
 
     debug!("labels: {:#?}", labels);
 
+    // pull the cached project member names out of config and present them
     let assignees = MultiSelect::new()
         .with_prompt("Assignee(s)")
         .items(
@@ -137,6 +138,7 @@ fn interactive_issue_builder<'a>(
         )
         .interact()?;
 
+    // pull the cached project member ids out of the selected assignees to POST later
     if !assignees.is_empty() {
         i.assignee_ids(
             assignees
