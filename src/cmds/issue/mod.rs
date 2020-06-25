@@ -379,17 +379,15 @@ try `xdg-open(1)`.",
                             .empty_values(false)
                             .require_delimiter(true)
                     )
-                    //TODO: make this work with @usernames
                     .arg(
                         clap::Arg::with_name("assignees")
                             .long("assignees")
                             .short("a")
-                            .help("Sets issue assignee(s) IDs")
+                            .help("Username(s) of issue assignee(s)")
                             .takes_value(true)
                             .multiple(true)
                             .empty_values(false)
                             .require_delimiter(true)
-                            .validator(validator::check_u64)
                     )
                     .after_help(
 "If the title is is omitted then the user will be prompted for issue parameters interactively",

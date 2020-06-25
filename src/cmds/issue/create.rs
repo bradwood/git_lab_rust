@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
@@ -44,14 +46,34 @@ pub fn generate_issue_builder<'a>(
             "labels" => i.labels(args.values_of("labels").unwrap()),
 
             // TODO add assignees
-            // "assignees" => i.assignee_ids(args.values_of("assignees").unwrap()),
+            "assignees" => {
+
+                let mut config_member_map = config.members  // these look like ["1234:name", ...]
+                    .iter()
+                    .map(|x|
+                        (x.split(':').collect::<Vec<&str>>()[1],
+                        x.split(':').collect::<Vec<&str>>()[0].parse::<u64>().unwrap())
+                        )
+                    .collect::<HashMap<&str, u64>>();  // ... and end up like {"name": 1234, ...}
+
+                let assignee_ids = args.values_of("assignees").unwrap()
+                    .map(|n| config_member_map.remove(n).ok_or_else(|| n))
+                    .collect::<anyhow::Result<Vec<u64>, &str>>();
+
+                debug!("config_member_map: {:#?}", config_member_map);
+                debug!("assignee_ids: {:#?}", assignee_ids);
+
+                let final_ids = assignee_ids
+                    .map_err(|e| anyhow!("Assignee `{}` not found. If user is a project member, rerun `git lab project attach` ", e))?;
+                i.assignee_ids(final_ids.into_iter())
+            },
 
             _ => unreachable!(),
         };
     }
 
     i.build()
-        .map_err(|e| anyhow!("Could not construct query to post issue to server.\n {}",e))
+        .map_err(|e| anyhow!("Could not construct issue to send to server.\n {}",e))
 }
 
 fn interactive_issue_builder<'a>(
@@ -130,7 +152,7 @@ fn interactive_issue_builder<'a>(
         .items(
             &config.members
             .iter()
-            .map(|s| 
+            .map(|s|
                 s.split(':')
                 .collect::<Vec<&str>>()[1]
             )
