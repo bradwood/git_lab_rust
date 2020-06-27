@@ -27,6 +27,10 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
     * `issue (open|view|browse)` -- open issue's URL in browser
     * `issue (show|info|get)` -- show details about a issue
     * `issue list` -- get list of issues
+    * `issue close` -- close issue
+    * `issue reopen` -- reopen issue
+    * `issue lock` -- lock discussions on issue
+    * `issue unlock` -- unlock discussions on issue
 
 ### Planned functions
 
