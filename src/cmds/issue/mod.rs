@@ -2,6 +2,7 @@ mod create;
 mod list;
 mod open;
 mod show;
+mod quick_edit;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc, NaiveDate};
@@ -15,6 +16,14 @@ use crate::gitlab;
 use crate::subcommand;
 use crate::utils::validator;
 use crate::utils;
+
+#[derive(Debug)]
+pub enum ShortCmd {
+    Close,
+    Reopen,
+    Lock,
+    Unlock,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Issue {
@@ -58,7 +67,7 @@ pub fn generate_basic_issue_builder<'a>(
     i.project(project_id);
     i.issue(args.value_of("id").unwrap().parse::<u64>().unwrap());
     i.build()
-        .map_err(|e| anyhow!("Could not construct query to fetch project URL from server.\n {}",e))
+        .map_err(|e| anyhow!("Could not construct query for this issue.\n {}",e))
 }
 
 /// This implements the `issue` command. It proves the ability to create, query and manipulate
@@ -261,6 +270,63 @@ form: `y, M, d, h, m, s`."
                     ),
             )
             .subcommand(
+                clap::SubCommand::with_name("status")
+                    .about("Shows issues related to you")
+                    .setting(clap::AppSettings::ColoredHelp)
+            )
+            .subcommand(
+                clap::SubCommand::with_name("unlock")
+                    .about("Unlocks an issue")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Issue ID to unlock")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("lock")
+                    .about("Locks an issue")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Issue ID to lock")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("reopen")
+                    .about("Re-opens an issue")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Issue ID to re-open")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("close")
+                    .about("Closes an issue")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Issue ID to close")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("show")
                     .about("Shows issue information in the terminal")
                     .visible_aliases(&["info", "get"])
@@ -407,6 +473,11 @@ try `xdg-open(1)`.",
             ("open", Some(a)) => open::open_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
+            // ("status", Some(a)) => status::status_issues_cmd(a.clone(), config, *gitlabclient)?,
+            ("close", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("reopen", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
+            ("lock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
+            ("unlock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
             _ => unreachable!(),
         }
 

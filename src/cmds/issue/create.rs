@@ -64,7 +64,7 @@ pub fn generate_issue_builder<'a>(
                 debug!("assignee_ids: {:#?}", assignee_ids);
 
                 let final_ids = assignee_ids
-                    .map_err(|e| anyhow!("Assignee `{}` not found. If user is a project member, rerun `git lab project attach` ", e))?;
+                    .map_err(|e| anyhow!("Assignee `{}` not found. If user is a project member, run `git lab project refresh` ", e))?;
                 i.assignee_ids(final_ids.into_iter())
             },
 

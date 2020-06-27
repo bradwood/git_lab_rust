@@ -20,6 +20,8 @@ pub use gitlab::api::projects::issues::Issue;
 pub use gitlab::api::projects::issues::IssueBuilder;
 pub use gitlab::api::projects::issues::Issues;
 pub use gitlab::api::projects::issues::IssuesBuilder;
+pub use gitlab::api::projects::issues::EditIssue;
+pub use gitlab::api::projects::issues::EditIssueBuilder;
 pub use gitlab::api::projects::issues::CreateIssue;
 pub use gitlab::api::projects::issues::CreateIssueBuilder;
 pub use gitlab::api::projects::labels::Labels;
@@ -38,6 +40,7 @@ pub use gitlab::api::projects::MergeMethod;
 pub use gitlab::api::projects::BuildGitStrategy;
 
 pub use gitlab::api::projects::issues::IssueState;
+pub use gitlab::api::projects::issues::IssueStateEvent;
 pub use gitlab::api::projects::issues::IssueScope;
 pub use gitlab::api::projects::issues::IssueWeight;
 pub use gitlab::api::projects::issues::IssueOrderBy;
