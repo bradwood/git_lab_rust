@@ -269,20 +269,20 @@ impl subcommand::SubCommand for IssueCmd<'_> {
 form: `y, M, d, h, m, s`."
                     ),
             )
-            .subcommand(
-                clap::SubCommand::with_name("status")
-                    .about("Shows issues related to you")
-                    .setting(clap::AppSettings::ColoredHelp)
-                    .arg(
-                        clap::Arg::with_name("project_id")
-                            .short("p")
-                            .long("project_id")
-                            .help("Project ID to look for issues in. Defaults to attached Project ID.")
-                            .empty_values(false)
-                            .takes_value(true)
-                            .validator(validator::check_u64)
-                    )
-            )
+            // .subcommand(
+            //     clap::SubCommand::with_name("status")
+            //         .about("Shows issues related to you")
+            //         .setting(clap::AppSettings::ColoredHelp)
+            //         .arg(
+            //             clap::Arg::with_name("project_id")
+            //                 .short("p")
+            //                 .long("project_id")
+            //                 .help("Project ID to look for issues in. Defaults to attached Project ID.")
+            //                 .empty_values(false)
+            //                 .takes_value(true)
+            //                 .validator(validator::check_u64)
+            //         )
+            // )
             .subcommand(
                 clap::SubCommand::with_name("unlock")
                     .about("Unlocks an issue")
