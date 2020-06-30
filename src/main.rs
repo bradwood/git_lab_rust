@@ -33,7 +33,7 @@
 //! ## Planned functions
 //!
 //!  * `project list` -- get list of projects
-//!  * `merge-request` -- interact with merge requests
+//!  * `mr` -- interact with merge requests
 //!  * `pipeline` -- interact with Gitlab CI jobs
 //!  * `group` -- interact with Gitlab groups
 //!  * `user` -- interact with Gitlab users
@@ -87,7 +87,7 @@ mod gitlab;
 mod cmds {
     pub mod init;
     pub mod issue;
-    pub mod merge_request;
+    pub mod mr;
     pub mod project;
 }
 
@@ -95,7 +95,7 @@ use anyhow::{anyhow, Result};
 
 use config::Config;
 
-use crate::cmds::{init, merge_request, project, issue};
+use crate::cmds::{init, mr, project, issue};
 
 /// This should be called before calling any cli method or printing any output.
 /// See https://github.com/rust-lang/rust/issues/46016#issuecomment-605624865
@@ -123,8 +123,8 @@ fn main() -> Result<()> {
             Box::new(init::InitCmd {
                 clap_cmd: clap::SubCommand::with_name("init"),
             }),
-            Box::new(merge_request::MergeRequestCmd {
-                clap_cmd: clap::SubCommand::with_name("merge-request"),
+            Box::new(mr::MergeRequestCmd {
+                clap_cmd: clap::SubCommand::with_name("mr"),
             }),
             Box::new(issue::IssueCmd {
                 clap_cmd: clap::SubCommand::with_name("issue"),
@@ -164,7 +164,7 @@ fn main() -> Result<()> {
 
     match matches.subcommand() {
         ("init", Some(sub_args)) => cli_commands.commands[0].run(config, sub_args.clone())?,
-        ("merge-request", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
+        ("mr", Some(sub_args)) => cli_commands.commands[1].run(config, sub_args.clone())?,
         ("issue", Some(sub_args)) => cli_commands.commands[2].run(config, sub_args.clone())?,
         ("project", Some(sub_args)) => cli_commands.commands[3].run(config, sub_args.clone())?,
         _ => (), // clap should catch this before it ever fires
