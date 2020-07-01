@@ -35,7 +35,7 @@ pub fn quick_edit_issue_cmd(
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
 
-    let _  = api::ignore(endpoint)
+    api::ignore(endpoint)
         .query(&gitlabclient)
         .context("Failed to update issue")?;
 
