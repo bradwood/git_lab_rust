@@ -20,16 +20,16 @@ fn print_issue(i: Issue) {
     skin.code_block.align = Alignment::Center;
     let c_date = format!("{}", HumanTime::from(i.created_at));
     let u_date = format!("{}", HumanTime::from(i.updated_at));
-    let up = format!("{}", "🠕".dimmed());
-    let down = format!("{}", "🠗".dimmed());
-    let merge = format!("{}", "∧".dimmed());
-    let weight = format!("{}", "ω".dimmed());
+    let up = format!("{}", "u".dimmed());
+    let down = format!("{}", "d".dimmed());
+    let merge = format!("{}", "m".dimmed());
+    let weight = format!("{}", "w".dimmed());
     let dot = format!("{}", "•".dimmed());
     let comments = format!("{}", "comments".dimmed());
     let assignee_str = format!("{}", "assigned".italic().blue().bold());
     let updated = format!("{}", "updated".dimmed());
     let due = format!("{}", "due".dimmed());
-    let confidential = format!("{}", "⊖".dimmed());
+    let confidential = format!("{}", "c".dimmed());
 
     // title
     println!("{} ", i.title.bold());
