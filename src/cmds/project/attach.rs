@@ -13,7 +13,7 @@ use serde::Deserialize;
 use crate::config;
 use crate::gitlab::Labels as GLLabels;
 use crate::gitlab::ProjectMembers as GLMembers;
-use crate::gitlab::Query;
+use crate::gitlab::{api, Query};
 use crate::gitlab;
 use crate::utils;
 
@@ -155,7 +155,7 @@ fn get_project_labels(project_id: u64, gitlabclient: &gitlab::Client) -> Result<
         name: String
     }
 
-    let labels: Vec<Label> = endpoint
+    let labels: Vec<Label> = api::paged(endpoint, api::Pagination::Limit(80))
         .query(gitlabclient)
         .context("Failed to query project labels")?;
 
