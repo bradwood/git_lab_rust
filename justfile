@@ -1,5 +1,7 @@
 readme:
 	cargo readme > README.md
+	git add README.md
+	git commit -m "docs: update README.md"
 
 clean:
 	cargo clean
@@ -45,29 +47,70 @@ test TEST:
 tarp:
 	cargo tarpaulin
 
-branch := `git rev-parse --abbrev-ref HEAD`
-last_tag := `git tag | tail -1`
-cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
-pwd := `pwd`
+# branch := `git rev-parse --abbrev-ref HEAD`
+# last_tag := `git tag | tail -1`
+# cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
+# pwd := `pwd`
 
 # bump minor version and tag
 bump-major:
-	test {{branch}} == "master"
-	test {{last_tag}} == {{cargo_ver}}
-	cargo bump major --git-tag
+	#!/usr/bin/env bash
+	BRANCH=$(git rev-parse --abrev-ref HEAD)
+	LAST_TAG=$(git tag | tail -1)
+	CARGO_VER=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	test $BRANCH == "master"
+	test $LAST_TAG == $CARGO_VER
+	cargo readme > README.md
+	git add README.md
+	changelog-rs --latest >>CHANGELOG.md
+	git add CHANGELOG.md
+	cargo bump major
+	cargo update
+	git add Cargo.lock Cargo.toml
+	CARGO_VER=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	git commit -m "release: $NEW_TAG"
+	git tag $NEW_TAG
+	git push; git push --tags
 
 # bump minor version and tag
 bump-minor:
-	test {{branch}} == "master"
-	test {{last_tag}} == {{cargo_ver}}
-	cargo bump minor --git-tag
+	#!/usr/bin/env bash
+	BRANCH=$(git rev-parse --abrev-ref HEAD)
+	LAST_TAG=$(git tag | tail -1)
+	CARGO_VER=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	test $BRANCH == "master"
+	test $LAST_TAG == $CARGO_VER
+	cargo readme > README.md
+	git add README.md
+	changelog-rs --latest >>CHANGELOG.md
+	git add CHANGELOG.md
+	cargo bump minor
+	cargo update
+	git add Cargo.lock Cargo.toml
+	NEW_TAG=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	git commit -m "release: $NEW_TAG"
+	git tag $NEW_TAG
+	git push; git push --tags
 
 # bump patch version and tag
 bump-patch:
-	test {{branch}} == "master"
-	test {{last_tag}} == {{cargo_ver}}
-	cargo bump patch --git-tag
-
+	#!/usr/bin/env bash
+	BRANCH=$(git rev-parse --abrev-ref HEAD)
+	LAST_TAG=$(git tag | tail -1)
+	CARGO_VER=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	test $BRANCH == "master"
+	test $LAST_TAG == $CARGO_VER
+	cargo readme > README.md
+	git add README.md
+	changelog-rs --latest >>CHANGELOG.md
+	git add CHANGELOG.md
+	cargo bump patch
+	cargo update
+	git add Cargo.lock Cargo.toml
+	NEW_TAG=$(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
+	git commit -m "release: $NEW_TAG"
+	git tag $NEW_TAG
+	git push; git push --tags
 
 musl:
 	docker run -it --rm \
