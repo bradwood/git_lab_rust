@@ -58,6 +58,7 @@ bump-major:
 	cargo readme > README.md
 	git add Cargo.lock Cargo.toml README.md
 	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
+	git tag  $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
 	git push; git push --tags
 
 bump-minor:
@@ -68,6 +69,7 @@ bump-minor:
 	cargo readme > README.md
 	git add Cargo.lock Cargo.toml README.md
 	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
+	git tag  $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
 	git push; git push --tags
 
 bump-patch:
@@ -78,6 +80,7 @@ bump-patch:
 	cargo readme > README.md
 	git add Cargo.lock Cargo.toml README.md
 	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
+	git tag  $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
 	git push; git push --tags
 
 musl:
