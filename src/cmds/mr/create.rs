@@ -13,20 +13,11 @@ fn resolves_issue_mr_title(p: u64, i: u64, gitlabclient: &Client) -> Result<&'st
     Ok(&"Resolves some issue title that is still to be implemented")
 }
 
-fn get_default_remote_branch(p: u64, gitlabclient: &Client) -> &'static str {
-    //TODO: cache the answer to this in config
-    &"master"
-}
-
 fn remote_branch_exists(p: u64, branch: &str, gitlabclient: &Client) -> bool {
     true
 }
 
 fn open_mr_on_branch(p: u64, branch: &str, gitlabclient: &Client) -> bool {
-    false
-}
-
-fn is_default_branch(branch: &str) -> bool {
     false
 }
 
@@ -81,16 +72,19 @@ pub fn create_merge_request_cmd(
         }
     }?;
 
+    let defaultbranch = &config.defaultbranch.unwrap();
+
     let target_branch = match (
         args.value_of("target_branch"),
-        get_default_remote_branch(project_id, &gitlabclient),
-    ) {
+        defaultbranch
+    )
+    {
         (Some(t), _) if remote_branch_exists(project_id, t, &gitlabclient) => Ok(t),
         (Some(t), _) => Err(anyhow!(format!(
             "Branch {} does not exist in the remote (GitLab), so cannot merge into it.",
             t
         ))),
-        (None, m) => Ok(m),
+        (None, _) => Ok(defaultbranch.as_str()),
     }?;
 
     let (local_branch_name, remote_branch_name) = get_current_branch();
@@ -145,7 +139,7 @@ pub fn create_merge_request_cmd(
         (None, Some(_), Some(remote), Some(i_id))
             if remote_branch_exists(project_id, remote, &gitlabclient)
                 && !branch_prefixed_with_issue_id(remote, i_id)
-                && !is_default_branch(remote)
+                && remote != defaultbranch
                 =>
             Err(anyhow!(format!(
                 "Remote branch {} must start with `{}-` to be associated with the issue.", remote, i_id))),
@@ -153,7 +147,7 @@ pub fn create_merge_request_cmd(
         // handle the case where a remote tracking branch exists
         (None, Some(_), Some(remote), None)
             if remote_branch_exists(project_id, remote, &gitlabclient)
-                && !is_default_branch(remote)
+                && remote != defaultbranch
                 =>
             Ok(remote),
 
@@ -192,22 +186,20 @@ pub fn create_merge_request_cmd(
             create_remote_branch(project_id, local, &gitlabclient),
 
         (None, Some(local), None, Some(i_id))
-            if !is_default_branch(local) =>
+            if local != defaultbranch =>
             Err(anyhow!(format!(
                 "Local branch {} must start with `{}-` to be associated with the issue.", local, i_id))),
 
         (None, Some(local), None, Some(i_id))
-            if is_default_branch(local) =>
+            if local == defaultbranch =>
             create_remote_branch(project_id, &slugify_and_prefix(i_id, title), &gitlabclient),
 
         (None, Some(local), None, None)
-            if !is_default_branch(local) =>
+            if local != defaultbranch =>
             create_remote_branch(project_id, local, &gitlabclient),
 
         (None, Some(local), None, None)
-            if
-                is_default_branch(local)
-                =>
+            if local == defaultbranch =>
             create_remote_branch(project_id, slugify(title), &gitlabclient),
 
         (_, _, _, _) => unreachable!(),
