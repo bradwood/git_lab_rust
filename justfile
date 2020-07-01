@@ -50,19 +50,26 @@ last_tag := `git tag | tail -1`
 cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
 pwd := `pwd`
 
-# bump minor version and tag
-# bump-major:
-# 	test {{branch}} == "master"
-# 	test {{last_tag}} == {{cargo_ver}}
-# 	cargo bump major --git-tag
+bump-major:
+	test {{branch}} == "master"
+	test {{last_tag}} == {{cargo_ver}}
+	cargo bump major
+	cargo update
+	cargo readme > README.md
+	git add Cargo.lock Cargo.toml README.md
+	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
+	git push; git push --tags
 
-# # bump minor version and tag
-# bump-minor:
-# 	test {{branch}} == "master"
-# 	test {{last_tag}} == {{cargo_ver}}
-# 	cargo bump minor --git-tag
+bump-minor:
+	test {{branch}} == "master"
+	test {{last_tag}} == {{cargo_ver}}
+	cargo bump minor
+	cargo update
+	cargo readme > README.md
+	git add Cargo.lock Cargo.toml README.md
+	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
+	git push; git push --tags
 
-# bump patch version and tag
 bump-patch:
 	test {{branch}} == "master"
 	test {{last_tag}} == {{cargo_ver}}
