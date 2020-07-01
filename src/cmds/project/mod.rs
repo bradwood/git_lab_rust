@@ -19,7 +19,7 @@ use crate::utils;
 #[derive(Debug, Deserialize)]
 pub struct Project {
     id: u64,
-    owner: Map<String, Value>,
+    owner: Option<Map<String, Value>>,
     web_url: String,
     created_at: DateTime<Utc>,
     ssh_url_to_repo: String,

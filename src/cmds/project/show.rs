@@ -9,8 +9,10 @@ use crate::gitlab::{api, Client, Query};
 
 fn print_project(p: Project) {
     println!("ID: {}", p.id);
-    println!("Owner: {}", p.owner["name"].as_str().unwrap());
-    println!("Owner's URL: {}", p.owner["web_url"].as_str().unwrap());
+    if let Some(o) = p.owner {
+        println!("Owner: {}", o["name"].as_str().unwrap());
+        println!("Owner's URL: {}", o["web_url"].as_str().unwrap());
+    }
     println!("Created: {}", p.created_at.with_timezone(&Local).to_rfc2822());
     println!("Web URL: {}", p.web_url);
     println!("SSH Repo URL: {}", p.ssh_url_to_repo);
