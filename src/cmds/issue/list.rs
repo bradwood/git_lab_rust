@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use chrono_humanize::HumanTime;
 use clap::value_t_or_exit;
 use comfy_table::*;
 use humantime::parse_duration;
+use serde::Deserialize;
 
-use crate::cmds::issue::Issue;
+// use crate::cmds::issue::Issue;
 use crate::config;
 use crate::config::OutputFormat;
 use crate::gitlab::converter::{
@@ -19,6 +20,39 @@ macro_rules! datefield {
         Utc::now() - Duration::from_std(parse_duration($a.value_of($s).unwrap()).unwrap()).unwrap()
     };
 }
+
+#[derive(Debug, Deserialize)]
+pub struct Issue {
+    // id: u64,
+    iid: u64,
+    // project_id: u64,
+    title: String,
+    // description: Option<String>,
+    state: String,
+    created_at: DateTime<Utc>,
+    // updated_at: DateTime<Utc>,
+    // closed_at: Option<DateTime<Utc>>,
+    // closed_by: Option<Map<String, Value>>,
+    // labels: Vec<String>,
+    // milestone: Option<String>,
+    // author: Map<String, Value>,
+    // assignees: Option<Vec<Map<String, Value>>>,
+    // user_notes_count: u64,
+    // merge_requests_count: u64,
+    // upvotes: u64,
+    // downvotes: u64,
+    // due_date: Option<NaiveDate>,
+    // confidential: bool,
+    // discussion_locked: Option<bool>,
+    // web_url: String,
+    // task_completion_status: Option<Map<String, Value>>,
+    // weight: Option<u64>,
+    // has_tasks: Option<bool>,
+    // task_status: Option<String>,
+    // references: Map<String, Value>,
+    // subscribed: Option<bool>,
+}
+
 
 pub fn generate_issues_builder<'a>(
     args: &'a clap::ArgMatches,
@@ -75,13 +109,13 @@ fn print_issues(issues: Vec<Issue>) {
         let create_date  = format!("{}", HumanTime::from(i.created_at));
 
         let id = if i.state == "opened" {
-            Cell::new(i.iid).add_attribute(Attribute::Bold).fg(Color::Blue)
+            Cell::new(i.iid).add_attribute(Attribute::Bold).fg(Color::Yellow)
         } else {
-            Cell::new(i.iid).add_attribute(Attribute::Dim).fg(Color::Blue)
+            Cell::new(i.iid).add_attribute(Attribute::Dim)
         };
 
         let title = if i.state == "opened" {
-            Cell::new(i.title)
+            Cell::new(i.title).add_attribute(Attribute::Bold)
         } else {
             Cell::new(i.title).add_attribute(Attribute::Dim)
         };
