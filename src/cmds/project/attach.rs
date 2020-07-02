@@ -36,7 +36,7 @@ enum RemoteType {
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/graphql/schema.json",
-    query_path = "src/graphql/ProjectsWithRemotes.graphql",
+    query_path = "src/graphql/queries.graphql",
     response_derives = "Debug"
 )]
 struct ProjectsWithRemotes;
@@ -144,6 +144,26 @@ fn get_project_members(project_id: u64, gitlabclient: &gitlab::Client) -> Result
     Ok(members.iter().map(|m| format!("{}:{}", m.id.to_string(), m.username.clone())).collect())
 }
 
+fn get_project_path_with_namespace(project_id: u64, gitlabclient: &gitlab::Client) -> Result<String> {
+    let mut project_builder  = GLProject::builder();
+    let endpoint = project_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project from server.\n {}",e))?;
+
+    debug!("endpoint: {:#?}", endpoint);
+
+    #[derive(Deserialize, Debug)]
+    struct Project {
+        path_with_namespace: String
+    }
+
+    let project: Project = endpoint
+        .query(gitlabclient)
+        .context("Failed to query project")?;
+
+    debug!("project: {:#?}", project);
+    Ok(project.path_with_namespace)
+}
+
 fn get_project_defaultbranch(project_id: u64, gitlabclient: &gitlab::Client) -> Result<String> {
     let mut project_builder  = GLProject::builder();
     let endpoint = project_builder.project(project_id).build()
@@ -211,6 +231,7 @@ this by manually obtaining the project's ID from the GUI and adding it to your r
 
     config.projectid = Some(project_id);
     config.defaultbranch = get_project_defaultbranch(project_id, &gitlabclient).ok();
+    config.path_with_namespace = get_project_path_with_namespace(project_id, &gitlabclient).ok();
     config.labels = get_project_labels(project_id, &gitlabclient)?;
     config.members = get_project_members(project_id, &gitlabclient)?;
     config.save(config::GitConfigSaveableLevel::Repo)?;
