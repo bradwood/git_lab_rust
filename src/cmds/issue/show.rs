@@ -170,8 +170,8 @@ pub fn show_issue_cmd(
     config: config::Config,
     gitlabclient: Client,
 ) -> Result<()> {
-    let mut p = GLIssue::builder();
-    let endpoint = generate_basic_issue_builder(&args, &config, &mut p)?;
+    let mut i = GLIssue::builder();
+    let endpoint = generate_basic_issue_builder(&args,"id", &config, &mut i)?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
