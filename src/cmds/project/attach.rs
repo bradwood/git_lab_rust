@@ -36,7 +36,7 @@ enum RemoteType {
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/graphql/schema.json",
-    query_path = "src/graphql/queries.graphql",
+    query_path = "src/graphql/projects_with_remotes.graphql",
     response_derives = "Debug"
 )]
 struct ProjectsWithRemotes;
@@ -74,6 +74,8 @@ fn get_remotes_from_server(search_str: &str, gitlabclient: &gitlab::Client) -> R
             search_str: search_str.to_string(),
         }
     );
+
+    debug!("graphql search string: {}", search_str);
 
     let response = gitlabclient.graphql::<ProjectsWithRemotes>(&query_body)
         .context("GraphQL error when looking for Projects with matching remotes")?;

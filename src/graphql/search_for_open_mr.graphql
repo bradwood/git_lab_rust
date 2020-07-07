@@ -1,0 +1,12 @@
+query SearchForOpenMr($search_str: [String!], $proj_path: ID!) {
+  project(fullPath: $proj_path) {
+    mergeRequests(sourceBranches: $search_str) {
+      nodes {
+        id
+        state
+        title
+        webUrl
+      }
+    }
+  }
+}
