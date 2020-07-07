@@ -1,9 +1,9 @@
 mod create;
 
 use anyhow::{Context, Result};
-// use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
-// use serde_json::{Map, Value};
+use serde_json::{Map, Value};
 
 use crate::config;
 // use crate::gitlab::Issue as GLIssue;
@@ -15,7 +15,28 @@ use crate::utils::validator;
 
 #[derive(Debug, Deserialize)]
 pub struct MergeRequest {
-
+    id: u64,
+    iid: u64,
+    project_id: u64,
+    title: String,
+    description: Option<String>,
+    state: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    closed_at: Option<DateTime<Utc>>,
+    closed_by: Option<Map<String, Value>>,
+    labels: Vec<String>,
+    milestone: Option<String>,
+    author: Map<String, Value>,
+    assignees: Option<Vec<Map<String, Value>>>,
+    user_notes_count: u64,
+    upvotes: u64,
+    downvotes: u64,
+    discussion_locked: Option<bool>,
+    web_url: String,
+    task_completion_status: Option<Map<String, Value>>,
+    references: Map<String, Value>,
+    subscribed: Option<bool>,
 }
 
 pub struct MergeRequestCmd<'a> {
