@@ -66,8 +66,9 @@ impl subcommand::SubCommand for MergeRequestCmd<'_> {
                     .arg(
                         clap::Arg::with_name("issue_id")
                             .long("issue_id")
+                            .visible_alias("closes")
                             .short("i")
-                            .help("Creates merge request related to this issue")
+                            .help("Specifies which issue this merge request will close")
                             .empty_values(false)
                             .takes_value(true)
                             .validator(validator::check_u64)
@@ -89,10 +90,39 @@ impl subcommand::SubCommand for MergeRequestCmd<'_> {
                             .empty_values(false)
                     )
                     .arg(
+                        clap::Arg::with_name("desc")
+                            .long("desc")
+                            .short("d")
+                            .help("Description")
+                            .takes_value(true)
+                            .empty_values(false)
+                    )
+                    .arg(
                         clap::Arg::with_name("title")
                             .help("Merge request title")
                             .takes_value(true)
                             .empty_values(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("squash")
+                            .help("Squash commits when merging")
+                            .long("squash")
+                            .short("q")
+                            .takes_value(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("remove_src")
+                            .help("Remove source branch on successful merge")
+                            .long("remove_src")
+                            .short("r")
+                            .takes_value(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("checkout")
+                            .help("Checkout branch of the created merge request")
+                            .long("checkout")
+                            .short("c")
+                            .takes_value(false)
                     )
                     .after_help(
 "Help..."

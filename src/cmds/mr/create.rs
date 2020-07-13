@@ -1,16 +1,17 @@
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Context,  Result};
 use clap::value_t;
-use dialoguer::Input;
-use git2::{Branch, Repository, BranchType, Error};
+use dialoguer::{Confirm, Input, Editor};
+use git2::{Branch, Repository};
 use graphql_client::GraphQLQuery;
 use serde::Deserialize;
 use slugify::slugify;
 
 use crate::cmds::issue::generate_basic_issue_builder;
 use crate::config;
-use crate::gitlab::{Client, CreateMergeRequest, Query, IssueState};
+use crate::gitlab::{Client, CreateMergeRequest, Query};
 use crate::gitlab::Issue as GLIssue;
 use crate::gitlab::Branch as GLBranch;
 use crate::gitlab::CreateBranch as GLCreateBranch;
@@ -73,6 +74,30 @@ fn open_mr_on_branch(p: &str, branch: &str, gitlabclient: &Client) -> bool {
             b.state == search_for_open_mr::MergeRequestState::opened)
 }
 
+fn get_commit_details(repo_path: &PathBuf) -> Result<(Option<String>, Option<String>)> {
+    let repo = Repository::open(&repo_path)
+        .context("Could not find local repo")?;
+    let head = repo.head()
+        .context("Could not find HEAD of local repo")?;
+    let commit = head.peel_to_commit()
+        .context("Could not exract commit from HEAD ref")?;
+    let message = commit.message()
+        .context("Could not exract commit message from message")?;
+    let message_lines: Vec<&str> = message.lines().collect();
+
+    if message_lines.len() >2 {
+        Ok((
+            Some(message_lines[0].to_string()),
+            Some(message_lines[2..].join("\n"))
+        ))
+
+    } else {
+        Ok((
+            Some(message_lines[0].to_string()),
+            None
+        ))
+    }
+}
 
 fn get_current_local_branch_name(repo_path: &PathBuf) -> Result<String> {
     debug!("get_current_local_branch_name");
@@ -93,7 +118,6 @@ fn get_current_local_branch_name(repo_path: &PathBuf) -> Result<String> {
     }
 }
 
-
 fn get_current_remote_branch_name(repo_path: &PathBuf) -> Result<String> {
     debug!("get_current_remote_branch_name");
 
@@ -103,30 +127,38 @@ fn get_current_remote_branch_name(repo_path: &PathBuf) -> Result<String> {
 
     let head = repo.head()
         .context("Could not find HEAD of local repo")?;
+    debug!("get_current_remote_branch_name - found HEAD");
 
     if head.is_branch() {
+        debug!("get_current_remote_branch_name - HEAD is branch");
         let b = Branch::wrap(head);
+        debug!("get_current_remote_branch_name - got branch from HEAD");
         let upstream = b.upstream()
             .context("Could not find the upstream branch name of the current local branch")?;
+        debug!("get_current_remote_branch_name - got upstream from branch pointing to head");
         let b_name = upstream.name()
             .context("Could not find the branch name of the remote branch")?;
-        let b_name = b_name.
+        let name = b_name.
             ok_or_else(|| anyhow!("Could not extract branch name"))?;
-        Ok(b_name.split('/').collect::<Vec<&str>>()[1].to_string())
+        debug!("get_current_remote_branch_name - got upstream branch name: {}", name);
+        if name.starts_with("origin/") {
+            Ok(name.replacen("origin/","", 1))
+        } else {
+            Ok(name.to_string())
+        }
     } else {
         Err(anyhow!("Could not find current local branch"))
     }
 }
 
-
 /// Return a tuple withe local and tracking remote branch configs, if present
 /// stripping any remote prefixes (i.e. `origin/`)
-fn get_current_branch(repo_path: PathBuf) -> (Option<String>, Option<String>) {
+fn get_current_branch(repo_path: &PathBuf) -> (Option<String>, Option<String>) {
 
     let local = get_current_local_branch_name(&repo_path).ok();
 
     let remote = if local.is_some() {
-        get_current_remote_branch_name(&repo_path ).ok()
+        get_current_remote_branch_name(&repo_path).ok()
     } else {
         None
     };
@@ -173,7 +205,22 @@ pub fn create_merge_request_cmd(
     gitlabclient: Client,
 ) -> Result<()> {
 
+    // if not inside local repo error and exit
+    config.repo_path.as_ref().ok_or_else(|| anyhow!("Local repo not found. Are you in the correct directory?"))?;
+
     let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+
+    let (commit_head, commit_body) = get_commit_details(&config.repo_path.as_ref().unwrap())?;
+
+    let defaultbranch = &config.defaultbranch.as_ref()
+        .ok_or_else(|| anyhow!("Could not determine default remote branch - try `git lab project refresh`"))?;
+
+    debug!("Default branch: {:#?}", defaultbranch);
+
+    let (local_branch_name, remote_branch_name) = get_current_branch(&config.repo_path.as_ref().unwrap());
+
+    debug!("Local branch name: {:#?}", local_branch_name);
+    debug!("Remote branch name: {:#?}", remote_branch_name);
 
     let issue_arg = value_t!(args, "issue_id", u64).ok();
 
@@ -197,7 +244,6 @@ pub fn create_merge_request_cmd(
         if i.state == "closed" {
             return Err(anyhow!(format!("Issue #{} is closed.", i.iid)))
         }
-
         issue_title = Some(i.title);
     } else {
         issue_title = None;
@@ -207,17 +253,22 @@ pub fn create_merge_request_cmd(
 
     let interactive_title: String;
 
-    //TODO: add WIP??
     let title = match (args.value_of("title"), issue_arg) {
         (Some(t), _) => Ok(t.to_string()),
         (_, Some(_)) => resolves_issue_mr_title(Ok(&issue_title.unwrap().as_str())),
         (None, None) => {
-            //TODO infer initial text from the HEAD's commit message?? Add desc if multi-line commit message...
-            interactive_title = Input::<String>::new()
-            .with_prompt("Title")
-            .allow_empty(false)
-            // .with_initial_text("TODO - get first line of commit message")
-            .interact()?;
+            if commit_head.is_some() && local_branch_name != Some(defaultbranch.to_string()) {
+                interactive_title = Input::<String>::new()
+                    .with_prompt("Title")
+                    .allow_empty(false)
+                    .with_initial_text(commit_head.unwrap())
+                    .interact()?;
+            } else {
+                interactive_title = Input::<String>::new()
+                    .with_prompt("Title")
+                    .allow_empty(false)
+                    .interact()?;
+            }
 
             Ok(interactive_title)
         }
@@ -225,11 +276,60 @@ pub fn create_merge_request_cmd(
 
     debug!("Title: {:#?}", title);
 
-    // let defaultbranch = &config.defaultbranch.unwrap();
-    let defaultbranch = &config.defaultbranch
-        .ok_or_else(|| anyhow!("Could not determine default remote branch - try `git lab project refresh`"))?;
+    let description = match (args.value_of("desc"), args.value_of("issue_id")) {
+        (Some(d), Some(i)) => Some(d.to_string() + "\n\nCloses #" +  i),
+        (None, Some(i)) => {
+            if Confirm::new()
+                    .with_prompt("Edit merge request description?")
+                    .default(true)
+                    .show_default(true)
+                    .interact()?
+            {
+                match commit_body {
+                    Some(body) => Editor::new()
+                        .extension(".md")
+                        .require_save(true)
+                        .edit(&(body + &"\n\nCloses #".to_string() + i))?,
+                    None => Editor::new()
+                        .extension(".md")
+                        .require_save(true)
+                        .edit(&("<!-- insert MR description here - save and quit when done -->\n\nCloses #".to_string() + i))?,
+                }
+            } else {
+                match commit_body {
+                    Some(body) => Some(body + &"\n\nCloses #".to_string() + i),
+                    None => Some("Closes #".to_string() + i),
+                }
+            }
+        },
+        (Some(d), None) => Some(d.to_string()),
+        (None, None) => {
+            if Confirm::new()
+                    .with_prompt("Edit merge request description?")
+                    .default(true)
+                    .show_default(true)
+                    .interact()?
+            {
+                match commit_body {
+                    Some(body) => Editor::new()
+                        .extension(".md")
+                        .require_save(true)
+                        .edit(&body)?,
+                    None => Editor::new()
+                        .extension(".md")
+                        .require_save(true)
+                        .edit("<!-- insert MR description here - save and quit when done -->")?,
+                }
+            } else {
+                match commit_body {
+                    Some(body) => Some(body),
+                    None => None,
+                }
+            }
+        },
+    };
 
-    debug!("Default branch: {:#?}", defaultbranch);
+    debug!("Description: {:#?}", description);
 
     let target_branch = match (
         args.value_of("target_branch"),
@@ -245,11 +345,6 @@ pub fn create_merge_request_cmd(
     }?;
 
     debug!("Target branch: {:#?}", target_branch);
-
-    let (local_branch_name, remote_branch_name) = get_current_branch(config.repo_path.unwrap());
-
-    debug!("Local branch name: {:#?}", local_branch_name);
-    debug!("Remote branch name: {:#?}", remote_branch_name);
 
     let project_path = &config.path_with_namespace.unwrap();
 
@@ -318,10 +413,12 @@ pub fn create_merge_request_cmd(
         (None, Some(_), Some(remote), Some(i_id))
             if remote_branch_exists(project_id, &remote, &gitlabclient)
                 && !branch_prefixed_with_issue_id(&remote, i_id)
-                && &remote != defaultbranch
+                && &remote != *defaultbranch
                 =>
-            Err(anyhow!(format!(
-                "Remote branch {} must start with `{}-` to be associated with the issue.", &remote, i_id))),
+                {
+                    debug!("3a None Some(_) Some({}) None", remote);
+                    Ok(remote)
+                }
 
         // handle the case where a remote tracking branch exists
         (None, Some(_), Some(remote), None)
@@ -334,31 +431,34 @@ pub fn create_merge_request_cmd(
 
         (None, Some(_), Some(remote), None)
             if remote_branch_exists(project_id, &remote, &gitlabclient)
-                && &remote != defaultbranch
+                && &remote != *defaultbranch
                 =>
                 {
                     debug!("4 None Some(_) Some({}) None", remote);
                     Ok(remote)
                 }
 
+        (None, Some(local), Some(remote), None)
+            if remote_branch_exists(project_id, &remote, &gitlabclient)
+                && &remote == *defaultbranch
+                =>
+                {
+                    debug!("4a None Some(_) Some({}) None", remote);
+                    debug!("Creating remote branch...");
+                    create_remote_branch(project_id, defaultbranch, &slug(&title), &gitlabclient)
+                }
+
         // handle the case where a remote tracking branch is present locally but does not exist on
         // the server, probably because it was deleted on the server
         (None, Some(_), Some(remote), Some(i_id))
             if !remote_branch_exists(project_id, &remote, &gitlabclient)
-                && branch_prefixed_with_issue_id(&remote, i_id)
+                // && branch_prefixed_with_issue_id(&remote, i_id)
                 =>
                 {
                     debug!("5 None Some(_) Some({}) Some({})", remote, i_id);
                     debug!("Creating remote branch...");
                     create_remote_branch(project_id, defaultbranch, &remote, &gitlabclient)
                 }
-
-        (None, Some(_), Some(remote), Some(i_id))
-            if !remote_branch_exists(project_id, &remote, &gitlabclient)
-                && !branch_prefixed_with_issue_id(&remote, i_id)
-                =>
-            Err(anyhow!(format!(
-                "Remote branch {} must start with `{}-` to be associated with the issue.", remote, i_id))),
 
         (None, Some(_), Some(remote), None)
             if !remote_branch_exists(project_id, &remote, &gitlabclient)
@@ -371,8 +471,6 @@ pub fn create_merge_request_cmd(
 
         // No source branch explicitly passed, so try to infer or create it using the local branch,
         // as no tracking remote appears to be set up
-
-        //TODO: should this also configure the local to track this new remote branch???
         (None, Some(local), None, Some(i_id))
             if branch_prefixed_with_issue_id(&local, i_id)
                 =>
@@ -383,13 +481,13 @@ pub fn create_merge_request_cmd(
                 }
 
         (None, Some(local), None, Some(i_id))
-            if &local != defaultbranch
+            if &local != *defaultbranch
                 =>
             Err(anyhow!(format!(
                 "Local branch {} must start with `{}-` to be associated with the issue.", &local, i_id))),
 
         (None, Some(local), _, Some(i_id))
-            if &local == defaultbranch
+            if &local == *defaultbranch
                && remote_branch_exists(project_id, &slug_and_prefix(i_id, &title), &gitlabclient)
                 =>
             Err(anyhow!(format!(
@@ -397,19 +495,17 @@ pub fn create_merge_request_cmd(
                 &slug_and_prefix(i_id, &title), i_id))),
 
         (None, Some(local), _, Some(i_id))
-            if &local == defaultbranch
+            if &local == *defaultbranch
                && !remote_branch_exists(project_id, &slug_and_prefix(i_id, &title), &gitlabclient)
                 =>
                 {
-                    //TODO -- update description with "closes issue" line...
-                    // probably also needed elsewhere!
                     debug!("8 None Some({}) None Some({})", local, i_id);
                     debug!("Creating remote branch...");
                     create_remote_branch(project_id, defaultbranch, &slug_and_prefix(i_id, &title), &gitlabclient)
                 }
 
         (None, Some(local), None, None)
-            if &local != defaultbranch
+            if &local != *defaultbranch
                && !remote_branch_exists(project_id, &local, &gitlabclient)
                 =>
                 {
@@ -421,7 +517,7 @@ pub fn create_merge_request_cmd(
         // no explicit source branch or issue created, and on the master branch,
         // so create the source branch from the title
         (None, Some(local), _, None)
-            if &local == defaultbranch
+            if &local == *defaultbranch
                && !remote_branch_exists(project_id, &slug(&title), &gitlabclient)
                 =>
                 {
@@ -444,8 +540,22 @@ pub fn create_merge_request_cmd(
     let endpoint = mr
         .project(project_id)
         .target_branch(target_branch)
-        .source_branch(source_branch)
-        .title(title)
+        .source_branch(&source_branch)
+        .title("WIP: ".to_string() + &title);
+
+    if let Some(d) = description {
+        endpoint.description(d);
+    };
+
+    if args.occurrences_of("squash") > 0 {
+        endpoint.squash(true);
+    };
+
+    if args.occurrences_of("remove_src") > 0 {
+        endpoint.remove_source_branch(true);
+    };
+
+    let endpoint = endpoint
         .build()
         .map_err(|e| anyhow!("Could not construct API call to create merge request.\n {}",e))?;
 
@@ -456,7 +566,25 @@ pub fn create_merge_request_cmd(
         .query(&gitlabclient)
         .context("Failed to create merge request")?;
 
-    println!("Merge Request URL: {}", merge_request.web_url);
+    println!("Merge Request created at: {}", merge_request.web_url);
+
+    if args.occurrences_of("checkout") > 0 {
+        let fetch = Command::new("git")
+            .args(&["fetch","origin"])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?
+            .wait()?;
+        // println!("{}",fetch);
+
+        let checkout = Command::new("git")
+            .args(&["checkout","-b", &source_branch, &("origin/".to_string() + &source_branch)])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?
+            .wait()?;
+        // println!("{}",checkout);
+    }
 
     Ok(())
 }
