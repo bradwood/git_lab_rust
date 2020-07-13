@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
-use dialoguer::{Input, Editor, MultiSelect};
+use dialoguer::{Confirm, Input, Editor, MultiSelect};
 
 use crate::cmds::issue::Issue;
 use crate::config;
@@ -90,10 +90,18 @@ fn interactive_issue_builder<'a>(
         .interact()?;
     i.title(title);
 
-    let description = Editor::new()
-        .extension(".md")
-        .require_save(true)
-        .edit("<!-- insert issue description here (markdown supported) - save and quit when done -->")?;
+    let description = if Confirm::new()
+        .with_prompt("Edit issue description?")
+        .default(true)
+        .show_default(true)
+        .interact()?
+    {
+        Editor::new()
+            .extension(".md")
+            .require_save(true)
+            .edit("<!-- insert issue description here - save and quit when done -->")?
+    } else { None };
+
     if let Some(desc) = description {
         i.description(desc);
     }
