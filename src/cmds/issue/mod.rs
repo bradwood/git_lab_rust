@@ -59,13 +59,14 @@ pub struct Issue {
 
 pub fn generate_basic_issue_builder<'a>(
     args: &'a clap::ArgMatches,
+    issue_arg_name: &str,
     config: &'a config::Config,
     i: &'a mut IssueBuilder<'a>,
 ) -> Result<GLIssue<'a>> {
 
     let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
     i.project(project_id);
-    i.issue(args.value_of("id").unwrap().parse::<u64>().unwrap());
+    i.issue(args.value_of(&issue_arg_name).unwrap().parse::<u64>().unwrap());
     i.build()
         .map_err(|e| anyhow!("Could not construct query for this issue.\n {}",e))
 }

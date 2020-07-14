@@ -37,6 +37,7 @@ chrono-humanize = "0.0.11"
 textwrap = "0.11.0"
 humantime = "2.0.1"
 comfy-table = "0.1.1"
+slugify = "0.1.0"
 
 [dependencies.clap]
 version = "2.33.0"

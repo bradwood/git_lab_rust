@@ -29,6 +29,14 @@ pub use gitlab::api::projects::labels::LabelsBuilder;
 pub use gitlab::api::projects::members::ProjectMembers;
 pub use gitlab::api::projects::members::ProjectMembersBuilder;
 
+pub use gitlab::api::projects::merge_requests::CreateMergeRequest;
+pub use gitlab::api::projects::merge_requests::CreateMergeRequestBuilder;
+
+pub use gitlab::api::projects::repository::branches::CreateBranch;
+pub use gitlab::api::projects::repository::branches::CreateBranchBuilder;
+pub use gitlab::api::projects::repository::branches::Branch;
+pub use gitlab::api::projects::repository::branches::BranchBuilder;
+
 pub use gitlab::api::common::EnableState;
 pub use gitlab::api::common::VisibilityLevel;
 pub use gitlab::api::common::SortOrder;

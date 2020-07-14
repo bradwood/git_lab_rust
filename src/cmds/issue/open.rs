@@ -8,7 +8,7 @@ use crate::utils;
 
 pub fn open_issue_cmd(args: clap::ArgMatches, config: config::Config, gitlabclient: Client) -> Result<()> {
     let mut p = GLIssue::builder();
-    let endpoint = generate_basic_issue_builder(&args, &config, &mut p)?;
+    let endpoint = generate_basic_issue_builder(&args, "id", &config, &mut p)?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);

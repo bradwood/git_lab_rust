@@ -73,8 +73,10 @@ pub struct Config {
     pub tls: Option<bool>,
     pub format: Option<OutputFormat>,
     pub repo_path: Option<PathBuf>, //convenience param, not saved with ::save()
+    pub path_with_namespace: Option<String>,
     pub user_config_type: Option<UserGitConfigLevel>, //convenience param, not saved with ::save()
     pub projectid: Option<u64>, //set with project attach command
+    pub defaultbranch: Option<String>, //set with project attach command
     pub labels: Vec<String>, //project labels for attached project
     pub members: Vec<String>, //project members formatted as "id:username"
 }
@@ -130,6 +132,8 @@ fn update_config_from_git(config: &mut Config, git_config: &GitConfig) {
             "gitlab.projectid" => config.projectid = Some(entry.value().unwrap().parse::<u64>().unwrap()),
             "gitlab.label" =>  config.labels.push(entry.value().unwrap().to_string()),
             "gitlab.member" =>  config.members.push(entry.value().unwrap().to_string()),
+            "gitlab.defaultbranch" => config.defaultbranch = Some(entry.value().unwrap().to_string()),
+            "gitlab.pathwithnamespace" => config.path_with_namespace = Some(entry.value().unwrap().to_string()),
             _ => (),
         };
         trace!(
@@ -257,6 +261,17 @@ fn write_config(save_config: &mut GitConfig, config: &Config) -> Result<()> {
                 .context("Failed to save gitlab.member to git config.")?;
         }
     }
+
+    if config.path_with_namespace.is_some() {
+        save_config.set_str("gitlab.pathwithnamespace", config.path_with_namespace.as_ref().unwrap())
+            .context("Failed to save gitlab.pathwithnamespace to git config.")?;
+    }
+
+    if config.defaultbranch.is_some() {
+        save_config.set_str("gitlab.defaultbranch", config.defaultbranch.as_ref().unwrap())
+            .context("Failed to save gitlab.defaultbranch to git config.")?;
+    }
+
     Ok(())
 }
 
@@ -274,6 +289,8 @@ impl Config {
             user_config_type: None,
             labels: vec!(),
             members: vec!(),
+            defaultbranch: None,
+            path_with_namespace: None,
         }
     }
 
@@ -679,6 +696,8 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
+            defaultbranch: None,
+            path_with_namespace: None,
             user_config_type: None,
             labels: vec!(),
             members: vec!(),
@@ -712,6 +731,8 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
+            defaultbranch: None,
+            path_with_namespace: None,
             user_config_type: None,
             labels: vec!(),
             members: vec!(),
@@ -742,6 +763,8 @@ mod config_unit_tests {
             format: Some(OutputFormat::JSON),
             projectid: Some(42),
             repo_path: None,
+            defaultbranch: None,
+            path_with_namespace: None,
             user_config_type: None,
             labels: vec!(),
             members: vec!(),
