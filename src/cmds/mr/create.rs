@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Context,  Result};
 use clap::value_t;
-use dialoguer::{Confirm, Input, Editor};
+use dialoguer::{Confirm, Input, Editor, MultiSelect};
 use git2::{Branch, Repository};
 use graphql_client::GraphQLQuery;
 use serde::Deserialize;
@@ -311,11 +312,11 @@ pub fn create_merge_request_cmd(
                     .interact()?
             {
                 match commit_body {
-                    Some(body) => Editor::new()
+                    Some(body) if local_branch_name != Some(defaultbranch.to_string()) => Editor::new()
                         .extension(".md")
                         .require_save(true)
                         .edit(&body)?,
-                    None => Editor::new()
+                    _ => Editor::new()
                         .extension(".md")
                         .require_save(true)
                         .edit("<!-- insert MR description here - save and quit when done -->")?,
@@ -346,7 +347,7 @@ pub fn create_merge_request_cmd(
 
     debug!("Target branch: {:#?}", target_branch);
 
-    let project_path = &config.path_with_namespace.unwrap();
+    let project_path = &config.path_with_namespace.as_ref().unwrap();
 
     debug!("Project path: {:#?}", project_path);
 
@@ -438,7 +439,7 @@ pub fn create_merge_request_cmd(
                     Ok(remote)
                 }
 
-        (None, Some(local), Some(remote), None)
+        (None, Some(_), Some(remote), None)
             if remote_branch_exists(project_id, &remote, &gitlabclient)
                 && &remote == *defaultbranch
                 =>
@@ -555,6 +556,76 @@ pub fn create_merge_request_cmd(
         endpoint.remove_source_branch(true);
     };
 
+    if args.occurrences_of("labels") > 0 {
+        endpoint.labels(args.values_of("labels").unwrap());
+
+    } else if !config.labels.is_empty() {
+        let labels = MultiSelect::new()
+            .with_prompt("Label(s)")
+            .items(&config.labels[..])
+            .interact()?;
+
+        if !labels.is_empty() {
+            endpoint.labels(
+                labels
+                .iter()
+                .map(|x| config.labels[*x].clone())
+            );
+        }
+    }
+
+    if args.occurrences_of("assignees") > 0 {
+        let mut config_member_map = config.members  // these look like ["1234:name", ...]
+            .iter()
+            .map(|x|
+                (x.split(':').collect::<Vec<&str>>()[1],
+                x.split(':').collect::<Vec<&str>>()[0].parse::<u64>().unwrap())
+                )
+            .collect::<HashMap<&str, u64>>();  // ... and end up like {"name": 1234, ...}
+
+        let assignee_ids = args.values_of("assignees").unwrap()
+            .map(|n| config_member_map.remove(n).ok_or_else(|| n))
+            .collect::<anyhow::Result<Vec<u64>, &str>>();
+
+        debug!("config_member_map: {:#?}", config_member_map);
+        debug!("assignee_ids: {:#?}", assignee_ids);
+
+        let final_ids = assignee_ids
+            .map_err(|e| anyhow!("Assignee `{}` not found. If user is a project member, run `git lab project refresh` ", e))?;
+        endpoint.assignees(final_ids.into_iter());
+
+    } else {
+        // pull the cached project member names out of config and present them
+        let assignees = MultiSelect::new()
+            .with_prompt("Assignee(s)")
+            .items(
+                &config.members
+                .iter()
+                .map(|s|
+                    s.split(':')
+                    .collect::<Vec<&str>>()[1]
+                )
+                .collect::<Vec<&str>>()
+            )
+            .interact()?;
+
+        // pull the cached project member ids out of the selected assignees to POST later
+        if !assignees.is_empty() {
+            endpoint.assignees(
+                assignees
+                .iter()
+                .map(|x|
+                    config.members[*x]
+                    .clone()
+                    .split(':')
+                    .collect::<Vec<&str>>()[0]
+                    .parse::<u64>()
+                    .unwrap()
+                    )
+            );
+        }
+    }
+
     let endpoint = endpoint
         .build()
         .map_err(|e| anyhow!("Could not construct API call to create merge request.\n {}",e))?;
@@ -569,21 +640,19 @@ pub fn create_merge_request_cmd(
     println!("Merge Request created at: {}", merge_request.web_url);
 
     if args.occurrences_of("checkout") > 0 {
-        let fetch = Command::new("git")
+        Command::new("git")
             .args(&["fetch","origin"])
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?
             .wait()?;
-        // println!("{}",fetch);
 
-        let checkout = Command::new("git")
+        Command::new("git")
             .args(&["checkout","-b", &source_branch, &("origin/".to_string() + &source_branch)])
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?
             .wait()?;
-        // println!("{}",checkout);
     }
 
     Ok(())

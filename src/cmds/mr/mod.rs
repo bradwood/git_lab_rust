@@ -124,8 +124,34 @@ impl subcommand::SubCommand for MergeRequestCmd<'_> {
                             .short("c")
                             .takes_value(false)
                     )
+                    .arg(
+                        clap::Arg::with_name("labels")
+                            .long("labels")
+                            .short("l")
+                            .help("Sets issue label(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("assignees")
+                            .long("assignees")
+                            .short("a")
+                            .help("Username(s) of issue assignee(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                    )
                     .after_help(
-"Help..."
+"This command tries to do the right thing by taking into account local and remote repo, branch and \
+commit state. It may create a source branch on the GitLab server if it cannot infer which to use. \
+Where appropriate, it will prompt the user to input required information. It will also aim to \
+follow GitLab conventions using branch names, merge request titles and trigger text within the \
+merge request description. \
+\
+NB: The current implementation requires that the GitLab-hosted git remote is called `origin`."
                     ),
             )
     }
