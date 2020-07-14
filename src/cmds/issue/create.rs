@@ -138,21 +138,23 @@ fn interactive_issue_builder<'a>(
         );
     }
 
-    let labels = MultiSelect::new()
-        .with_prompt("Label(s)")
-        .items(&config.labels[..])
-        .interact()?;
+    if !config.labels.is_empty() {
+        let labels = MultiSelect::new()
+            .with_prompt("Label(s)")
+            .items(&config.labels[..])
+            .interact()?;
 
-    if !labels.is_empty() {
-        i.labels(
-            labels
-            .iter()
-            .map(|x| config.labels[*x].clone())
-            .collect::<Vec<String>>()
-        );
+        if !labels.is_empty() {
+            i.labels(
+                labels
+                .iter()
+                .map(|x| config.labels[*x].clone())
+                .collect::<Vec<String>>()
+            );
+        }
+        debug!("labels: {:#?}", labels);
     }
 
-    debug!("labels: {:#?}", labels);
 
     // pull the cached project member names out of config and present them
     let assignees = MultiSelect::new()
