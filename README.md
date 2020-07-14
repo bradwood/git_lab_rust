@@ -31,11 +31,22 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
     * `issue reopen` -- reopen issue
     * `issue lock` -- lock discussions on issue
     * `issue unlock` -- unlock discussions on issue
+ * `mr` -- interact with merge requests
+    * `mr create` -- create merge request (either entirely via cli-passed parameters, or
+       interactively, by prompting the user for the inputs needed)
 
 ### Planned functions
 
+ * `mr` -- interact with merge requests
+    * `mr (open|view|browse)` -- open merge request's URL in browser
+    * `mr (show|info|get)` -- show details about a merge request
+    * `mr list` -- get list of merge requests
+    * `mr close` -- close merge request
+    * `mr approve` -- approve merge request
+    * `mr merge` -- merge merge request
+    * `mr lock` -- lock discussions on merge request
+    * `mr unlock` -- unlock discussions on merge request
  * `project list` -- get list of projects
- * `merge-request` -- interact with merge requests
  * `pipeline` -- interact with Gitlab CI jobs
  * `group` -- interact with Gitlab groups
  * `user` -- interact with Gitlab users
