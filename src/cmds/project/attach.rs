@@ -126,7 +126,7 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: &gitlab::Client) -> Result<u64
 }
 
 fn get_project_members(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
-    let mut members_builder = GLMembers::builder();
+    let mut members_builder = GLMembers::all_builder();
     let endpoint = members_builder.project(project_id).build()
         .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
 
