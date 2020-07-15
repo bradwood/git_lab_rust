@@ -254,6 +254,8 @@ pub fn create_merge_request_cmd(
 
     let interactive_title: String;
 
+    //FIXME: should not really pre-populate the title from a commit if the commit is the base one
+    //from master's head, which happens when a branch is freshly created....
     let title = match (args.value_of("title"), issue_arg) {
         (Some(t), _) => Ok(t.to_string()),
         (_, Some(_)) => resolves_issue_mr_title(Ok(&issue_title.unwrap().as_str())),
