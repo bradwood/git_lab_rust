@@ -46,7 +46,7 @@ tarp:
 	cargo tarpaulin
 
 branch := `git rev-parse --abbrev-ref HEAD`
-last_tag := `git tag | tail -1`
+last_tag := `git tag --sort=v:refname | tail -1`
 cargo_ver := `grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/"//g'`
 pwd := `pwd`
 
