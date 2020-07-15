@@ -1,0 +1,14 @@
+Installation Instructions
+=========================
+
+These instructions apply to the statically compiled binary tarball for Linux.
+
+Installation is easy:
+ * untar the tarball
+ * copy the binary into an accessible location in your PATH
+ * copy the man page into an accessible location in your MANPATH
+
+For example:
+
+sudo cp git-lab /usr/local/bin/
+sudo cp git-lab.1 /usr/local/share/man/man1/
