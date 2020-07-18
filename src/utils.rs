@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
+use clap::Values;
+
 use serde_json::json;
 
 use crate::config;
@@ -14,6 +16,21 @@ pub enum ShortCmd {
     Lock,
     Unlock,
 }
+
+pub fn map_user_ids_from_names<'a>(members: &[String], v:Values<'a>) -> Result<Vec<u64>> {
+    let mut member_map = members  // these look like ["1234:name", ...]
+        .iter()
+        .map(|x|
+            (x.split(':').collect::<Vec<&str>>()[1],
+            x.split(':').collect::<Vec<&str>>()[0].parse::<u64>().unwrap())
+            )
+        .collect::<HashMap<&str, u64>>();  // ... and end up like {"name": 1234, ...}
+
+    v.map(|n| member_map.remove(n).ok_or_else(|| n))
+        .collect::<anyhow::Result<Vec<u64>, &str>>()
+        .map_err(|e| anyhow!("Username `{}` not found. If user is a project member, run `git lab project refresh` ", e))
+}
+
 
 pub fn get_proj_from_arg_or_conf(args: &clap::ArgMatches, config: &config::Config) -> Result<u64> {
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use clap::value_t_or_exit;
@@ -45,27 +43,9 @@ pub fn generate_issue_builder<'a>(
             // list parameters
             "labels" => i.labels(args.values_of("labels").unwrap()),
 
-            // TODO add assignees
             "assignees" => {
-
-                let mut config_member_map = config.members  // these look like ["1234:name", ...]
-                    .iter()
-                    .map(|x|
-                        (x.split(':').collect::<Vec<&str>>()[1],
-                        x.split(':').collect::<Vec<&str>>()[0].parse::<u64>().unwrap())
-                        )
-                    .collect::<HashMap<&str, u64>>();  // ... and end up like {"name": 1234, ...}
-
-                let assignee_ids = args.values_of("assignees").unwrap()
-                    .map(|n| config_member_map.remove(n).ok_or_else(|| n))
-                    .collect::<anyhow::Result<Vec<u64>, &str>>();
-
-                debug!("config_member_map: {:#?}", config_member_map);
-                debug!("assignee_ids: {:#?}", assignee_ids);
-
-                let final_ids = assignee_ids
-                    .map_err(|e| anyhow!("Assignee `{}` not found. If user is a project member, run `git lab project refresh` ", e))?;
-                i.assignee_ids(final_ids.into_iter())
+                let assignee_ids = utils::map_user_ids_from_names(&config.members, args.values_of("assignees").unwrap())?;
+                i.assignee_ids(assignee_ids.into_iter())
             },
 
             _ => unreachable!(),
