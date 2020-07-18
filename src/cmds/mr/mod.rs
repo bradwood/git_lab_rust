@@ -1,14 +1,18 @@
 mod create;
+mod open;
 mod quick_edit;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
 use crate::config;
+use crate::gitlab::MergeRequest as GLMergeRequest;
+use crate::gitlab::MergeRequestBuilder;
 use crate::gitlab;
 use crate::subcommand;
+use crate::utils;
 use crate::utils::validator;
 use crate::utils::ShortCmd;
 
@@ -36,6 +40,20 @@ pub struct MergeRequest {
     task_completion_status: Option<Map<String, Value>>,
     references: Map<String, Value>,
     subscribed: Option<bool>,
+}
+
+pub fn generate_basic_mr_builder<'a>(
+    args: &'a clap::ArgMatches,
+    mr_arg_name: &str,
+    config: &'a config::Config,
+    m: &'a mut MergeRequestBuilder<'a>,
+) -> Result<GLMergeRequest<'a>> {
+
+    let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
+    m.project(project_id);
+    m.merge_request(args.value_of(&mr_arg_name).unwrap().parse::<u64>().unwrap());
+    m.build()
+        .map_err(|e| anyhow!("Could not construct query for this merge request.\n {}",e))
 }
 
 pub struct MergeRequestCmd<'a> {
@@ -213,7 +231,7 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                         clap::Arg::with_name("project_id")
                             .short("p")
                             .long("project_id")
-                            .help("Project ID to look for issue in. Defaults to attached Project ID.")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
                             .empty_values(false)
                             .takes_value(true)
                             .validator(validator::check_u64)
@@ -235,11 +253,45 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                         clap::Arg::with_name("project_id")
                             .short("p")
                             .long("project_id")
-                            .help("Project ID to look for issue in. Defaults to attached Project ID.")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
                             .empty_values(false)
                             .takes_value(true)
                             .validator(validator::check_u64)
                     )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("open")
+                    .about("Opens the merge request in the default browser")
+                    .visible_aliases(&["view", "browse"])
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("url")
+                            .short("u")
+                            .long("print_url")
+                            .help("Prints the URL instead of opening it.")
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to open")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .after_help(
+"This command will open the default browser to the URL of the passed merge request. It will use the BROWSER \
+environment variable to determine which browser to use. If this is not set, on Linux, it will \
+try `xdg-open(1)`.",
+                    ),
             )
     }
 
@@ -251,7 +303,7 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
 
         match args.subcommand() {
             ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
-            // ("open", Some(a)) => open::open_issue_cmd(a.clone(), config, *gitlabclient)?,
+            ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             // ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
             // ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
             // // ("status", Some(a)) => status::status_issues_cmd(a.clone(), config, *gitlabclient)?,

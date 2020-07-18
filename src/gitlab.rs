@@ -7,8 +7,6 @@
 //! needs to be abstracted.
 use anyhow::{Context, Result, anyhow};
 
-// pub use gitlab::Project;
-
 pub use gitlab::Gitlab as Client;
 pub use gitlab::api as api;
 pub use gitlab::api::Query;
@@ -30,6 +28,8 @@ pub use gitlab::api::projects::issues::IssueScope;
 pub use gitlab::api::projects::issues::IssueWeight;
 pub use gitlab::api::projects::issues::IssueOrderBy;
 
+pub use gitlab::api::projects::merge_requests::MergeRequest;
+pub use gitlab::api::projects::merge_requests::MergeRequestBuilder;
 pub use gitlab::api::projects::merge_requests::EditMergeRequest;
 pub use gitlab::api::projects::merge_requests::EditMergeRequestBuilder;
 pub use gitlab::api::projects::merge_requests::CreateMergeRequest;
