@@ -15,36 +15,11 @@ use crate::utils;
 
 #[derive(Debug, Deserialize)]
 pub struct Issue {
-    // id: u64,
     iid: u64,
-    // project_id: u64,
     title: String,
-    // description: Option<String>,
     state: String,
     created_at: DateTime<Utc>,
-    // updated_at: DateTime<Utc>,
-    // closed_at: Option<DateTime<Utc>>,
-    // closed_by: Option<Map<String, Value>>,
-    // labels: Vec<String>,
-    // milestone: Option<String>,
-    // author: Map<String, Value>,
-    // assignees: Option<Vec<Map<String, Value>>>,
-    // user_notes_count: u64,
-    // merge_requests_count: u64,
-    // upvotes: u64,
-    // downvotes: u64,
-    // due_date: Option<NaiveDate>,
-    // confidential: bool,
-    // discussion_locked: Option<bool>,
-    // web_url: String,
-    // task_completion_status: Option<Map<String, Value>>,
-    // weight: Option<u64>,
-    // has_tasks: Option<bool>,
-    // task_status: Option<String>,
-    // references: Map<String, Value>,
-    // subscribed: Option<bool>,
 }
-
 
 pub fn generate_issues_builder<'a>(
     args: &'a clap::ArgMatches,
@@ -88,7 +63,7 @@ pub fn generate_issues_builder<'a>(
         };
     }
     i.build()
-        .map_err(|e| anyhow!("Could not construct issues query from server.\n {}", e))
+        .map_err(|e| anyhow!("Could not construct issues query.\n {}", e))
 }
 
 fn print_issues(issues: Vec<Issue>) {
