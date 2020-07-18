@@ -1,12 +1,10 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use chrono_humanize::HumanTime;
 use clap::value_t_or_exit;
 use comfy_table::*;
-use humantime::parse_duration;
 use serde::Deserialize;
 
-// use crate::cmds::issue::Issue;
 use crate::config;
 use crate::config::OutputFormat;
 use crate::gitlab::converter::{
@@ -14,12 +12,6 @@ use crate::gitlab::converter::{
 };
 use crate::gitlab::{api, Client, IssueWeight, Issues, IssuesBuilder, Query, SortOrder};
 use crate::utils;
-
-macro_rules! datefield {
-    ($s:expr, $a:expr) => {
-        Utc::now() - Duration::from_std(parse_duration($a.value_of($s).unwrap()).unwrap()).unwrap()
-    };
-}
 
 #[derive(Debug, Deserialize)]
 pub struct Issue {
