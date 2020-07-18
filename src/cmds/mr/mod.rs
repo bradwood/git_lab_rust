@@ -1,5 +1,6 @@
 mod create;
 mod open;
+mod list;
 mod quick_edit;
 
 use anyhow::{anyhow, Context, Result};
@@ -67,6 +68,203 @@ impl subcommand::SubCommand for MergeRequestCmd<'_> {
             .setting(clap::AppSettings::ColoredHelp)
             .setting(clap::AppSettings::VersionlessSubcommands)
             .setting(clap::AppSettings::SubcommandRequiredElseHelp)
+            .subcommand(
+                clap::SubCommand::with_name("list")
+                    .about("Lists merge requests")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("state")
+                            .long("state")
+                            .short("s")
+                            .help("Filter merge requests by state")
+                            .takes_value(true)
+                            .possible_values(&["all", "closed", "opened", "merged", "locked"])
+                            .default_value("opened")
+                    )
+                    .arg(
+                        clap::Arg::with_name("scope")
+                            .long("scope")
+                            .short("m")
+                            .help("Filter merge requests by scope")
+                            .takes_value(true)
+                            .possible_values(&["created_by_me", "assigned_to_me"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("labels")
+                            .long("labels")
+                            .short("l")
+                            .help("Filter merge requests by label(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                            .conflicts_with_all(&["labelled", "unlabelled"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("unlabelled")
+                            .long("unlabelled")
+                            .help("Only return merge requests that have no labels")
+                    )
+                    .arg(
+                        clap::Arg::with_name("labelled")
+                            .long("labelled")
+                            .help("Only return merge requests that have any label")
+                    )
+                    .arg(
+                        clap::Arg::with_name("author")
+                            .long("author")
+                            .short("a")
+                            .help("Filter merge requests by author username")
+                            .takes_value(true)
+                            .empty_values(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("approved_by")
+                            .long("approved_by")
+                            .help("Filter merge requests which are approved by username(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                            .conflicts_with_all(&["no_approvals", "any_approvals"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("no_approvals")
+                            .long("no_approvals")
+                            .help("Only return merge requests that have no approvals")
+                    )
+                    .arg(
+                        clap::Arg::with_name("any_approvals")
+                            .long("any_approvals")
+                            .help("Only return merge requests that have at least one approval")
+                    )
+                    .arg(
+                        clap::Arg::with_name("approvers")
+                            .long("approvers")
+                            .help("Filter merge requests which have username(s) as approver(s)")
+                            .takes_value(true)
+                            .multiple(true)
+                            .empty_values(false)
+                            .require_delimiter(true)
+                            .conflicts_with_all(&["no_approver", "any_approvers"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("no_approvers")
+                            .long("no_approver")
+                            .help("Only return merge requests that have no approvers")
+                    )
+                    .arg(
+                        clap::Arg::with_name("any_approvers")
+                            .long("any_approvers")
+                            .help("Only return merge requests that have at least one approver")
+                    )
+                    .arg(
+                        clap::Arg::with_name("assignee")
+                            .long("assignee")
+                            .help("Filter merge requests which are assigned to a username")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .conflicts_with_all(&["assigned", "unassigned"])
+                    )
+                    .arg(
+                        clap::Arg::with_name("unassigned")
+                            .long("unassigned")
+                            .help("Only return merge requests that are unassigned")
+                    )
+                    .arg(
+                        clap::Arg::with_name("assigned")
+                            .long("assigned")
+                            .help("Only return merge requests that are assigned")
+                    )
+                    .arg(
+                        clap::Arg::with_name("filter")
+                            .long("filter")
+                            .short("f")
+                            .help("Filter merge requests by search string")
+                            .takes_value(true)
+                            .empty_values(false)
+                    )
+                    .arg(
+                        clap::Arg::with_name("created_after")
+                            .long("created_after")
+                            .short("c")
+                            .help("Fetch merge requests created after a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("created_before")
+                            .long("created_before")
+                            .short("C")
+                            .help("Fetch merge requests created before a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("updated_after")
+                            .long("updated_after")
+                            .short("u")
+                            .help("Fetch merge requests updated after a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("updated_before")
+                            .long("updated_before")
+                            .short("U")
+                            .help("Fetch merge requests updated before a certain time period")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .validator(validator::check_valid_humantime_duration)
+                    )
+                    .arg(
+                        clap::Arg::with_name("wip")
+                            .long("wip")
+                            .short("w")
+                            .help("Fetch merge requests which are works in progress")
+                    )
+                    .arg(
+                        clap::Arg::with_name("order_by")
+                            .long("order_by")
+                            .short("o")
+                            .help("Order results by given field")
+                            .takes_value(true)
+                            .possible_values(
+                                &["created_on",
+                                "updated_on",
+                                ])
+                            .default_value("created_on")
+                    )
+                    .arg(
+                        clap::Arg::with_name("descending")
+                            .long("desc")
+                            .short("D")
+                            .help("Sort results in descending order")
+                    )
+                    .arg(
+                        clap::Arg::with_name("ascending")
+                            .long("asc")
+                            .short("A")
+                            .help("Sort results in ascending order")
+                    )
+                    .arg(
+                        clap::Arg::with_name("max")
+                            .long("max")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .default_value("40")
+                            .help("Maximum records to return")
+                            .validator(validator::check_u32)
+                    )
+                    .after_help(
+"Note that the `_before` and `_after` fields take a duration string similar to `12y 3months 3weeks \
+9d 3hr 20sec`. You may use units of the long form: `years, months, days, weeks` etc, or the short \
+form: `y, M, d, h, m, s`."
+                    ),
+            )
             .subcommand(
                 clap::SubCommand::with_name("create")
                     .about("Creates a merge request")
@@ -305,7 +503,7 @@ try `xdg-open(1)`.",
             ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             // ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
-            // ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
+            ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
             // // ("status", Some(a)) => status::status_issues_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,

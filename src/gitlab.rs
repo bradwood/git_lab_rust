@@ -30,12 +30,16 @@ pub use gitlab::api::projects::issues::IssueOrderBy;
 
 pub use gitlab::api::projects::merge_requests::MergeRequest;
 pub use gitlab::api::projects::merge_requests::MergeRequestBuilder;
+pub use gitlab::api::projects::merge_requests::MergeRequests;
+pub use gitlab::api::projects::merge_requests::MergeRequestsBuilder;
 pub use gitlab::api::projects::merge_requests::EditMergeRequest;
 pub use gitlab::api::projects::merge_requests::EditMergeRequestBuilder;
 pub use gitlab::api::projects::merge_requests::CreateMergeRequest;
 pub use gitlab::api::projects::merge_requests::CreateMergeRequestBuilder;
 pub use gitlab::api::projects::merge_requests::MergeRequestState;
 pub use gitlab::api::projects::merge_requests::MergeRequestStateEvent;
+pub use gitlab::api::projects::merge_requests::MergeRequestOrderBy;
+pub use gitlab::api::projects::merge_requests::MergeRequestScope;
 
 pub use gitlab::api::projects::labels::Labels;
 pub use gitlab::api::projects::labels::LabelsBuilder;
@@ -65,6 +69,33 @@ use crate::config::Config;
 /// Misc converter functions used to convert string args to Gitlab types
 pub mod converter {
     use super::*;
+
+    pub fn mr_order_by_from_str(s: &str) -> Result<MergeRequestOrderBy> {
+        match s {
+            "created_on" => Ok(MergeRequestOrderBy::CreatedAt),
+            "updated_on" => Ok(MergeRequestOrderBy::UpdatedAt),
+            _ => Err(anyhow!("Incorrect merge request list ordering"))
+        }
+    }
+
+    pub fn mr_scope_from_str(s: &str) -> Result<MergeRequestScope> {
+        match s {
+            "created_by_me" => Ok(MergeRequestScope::CreatedByMe),
+            "assigned_to_me" => Ok(MergeRequestScope::AssignedToMe),
+            "all" => Ok(MergeRequestScope::All),
+            _ => Err(anyhow!("Incorrect merge request scope"))
+        }
+    }
+
+    pub fn mr_state_from_str(s: &str) -> Result<MergeRequestState> {
+        match s {
+            "opened" => Ok(MergeRequestState::Opened),
+            "closed" => Ok(MergeRequestState::Closed),
+            "locked" => Ok(MergeRequestState::Locked),
+            "merged" => Ok(MergeRequestState::Merged),
+            _ => Err(anyhow!("Incorrect issue state"))
+        }
+    }
 
     pub fn issue_order_by_from_str(s: &str) -> Result<IssueOrderBy> {
         match s {
@@ -191,6 +222,18 @@ mod gitlab_converter_unit_tests {
 
     #[rstest(
         s, t, f,
+        case("created_on", MergeRequestOrderBy::CreatedAt, &mr_order_by_from_str),
+        case("updated_on", MergeRequestOrderBy::UpdatedAt, &mr_order_by_from_str),
+
+        case("created_by_me", MergeRequestScope::CreatedByMe, &mr_scope_from_str),
+        case("assigned_to_me", MergeRequestScope::AssignedToMe, &mr_scope_from_str),
+        case("all", MergeRequestScope::All, &mr_scope_from_str),
+
+        case("opened", MergeRequestState::Opened, &mr_state_from_str),
+        case("closed", MergeRequestState::Closed, &mr_state_from_str),
+        case("locked", MergeRequestState::Locked, &mr_state_from_str),
+        case("merged", MergeRequestState::Merged, &mr_state_from_str),
+
         case("created_on", IssueOrderBy::CreatedAt, &issue_order_by_from_str),
         case("updated_on", IssueOrderBy::UpdatedAt, &issue_order_by_from_str),
         case("priority", IssueOrderBy::Priority, &issue_order_by_from_str),
