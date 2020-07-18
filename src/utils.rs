@@ -7,6 +7,14 @@ use serde_json::json;
 use crate::config;
 use crate::config::OutputFormat;
 
+#[derive(Debug)]
+pub enum ShortCmd {
+    Close,
+    Reopen,
+    Lock,
+    Unlock,
+}
+
 pub fn get_proj_from_arg_or_conf(args: &clap::ArgMatches, config: &config::Config) -> Result<u64> {
 
     match (config.projectid, args.value_of("project_id")) {

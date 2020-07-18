@@ -1,11 +1,10 @@
 use anyhow::{anyhow, Context, Result};
 use clap::value_t_or_exit;
 
-use crate::cmds::issue::ShortCmd;
 use crate::config;
 use crate::gitlab::{api, Client, EditIssue, Query, IssueStateEvent};
 use crate::utils;
-
+use crate::utils::ShortCmd;
 
 pub fn quick_edit_issue_cmd(
     args: clap::ArgMatches,
