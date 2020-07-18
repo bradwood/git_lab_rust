@@ -24,13 +24,25 @@ pub use gitlab::api::projects::issues::EditIssue;
 pub use gitlab::api::projects::issues::EditIssueBuilder;
 pub use gitlab::api::projects::issues::CreateIssue;
 pub use gitlab::api::projects::issues::CreateIssueBuilder;
+pub use gitlab::api::projects::issues::IssueState;
+pub use gitlab::api::projects::issues::IssueStateEvent;
+pub use gitlab::api::projects::issues::IssueScope;
+pub use gitlab::api::projects::issues::IssueWeight;
+pub use gitlab::api::projects::issues::IssueOrderBy;
+
+pub use gitlab::api::projects::merge_requests::EditMergeRequest;
+pub use gitlab::api::projects::merge_requests::EditMergeRequestBuilder;
+pub use gitlab::api::projects::merge_requests::CreateMergeRequest;
+pub use gitlab::api::projects::merge_requests::CreateMergeRequestBuilder;
+pub use gitlab::api::projects::merge_requests::MergeRequestState;
+pub use gitlab::api::projects::merge_requests::MergeRequestStateEvent;
+
 pub use gitlab::api::projects::labels::Labels;
 pub use gitlab::api::projects::labels::LabelsBuilder;
+
 pub use gitlab::api::projects::members::ProjectMembers;
 pub use gitlab::api::projects::members::ProjectMembersBuilder;
 
-pub use gitlab::api::projects::merge_requests::CreateMergeRequest;
-pub use gitlab::api::projects::merge_requests::CreateMergeRequestBuilder;
 
 pub use gitlab::api::projects::repository::branches::CreateBranch;
 pub use gitlab::api::projects::repository::branches::CreateBranchBuilder;
@@ -47,11 +59,6 @@ pub use gitlab::api::projects::FeatureAccessLevelPublic;
 pub use gitlab::api::projects::MergeMethod;
 pub use gitlab::api::projects::BuildGitStrategy;
 
-pub use gitlab::api::projects::issues::IssueState;
-pub use gitlab::api::projects::issues::IssueStateEvent;
-pub use gitlab::api::projects::issues::IssueScope;
-pub use gitlab::api::projects::issues::IssueWeight;
-pub use gitlab::api::projects::issues::IssueOrderBy;
 
 use crate::config::Config;
 

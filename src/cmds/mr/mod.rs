@@ -1,4 +1,5 @@
 mod create;
+mod quick_edit;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -6,12 +7,10 @@ use serde::Deserialize;
 use serde_json::{Map, Value};
 
 use crate::config;
-// use crate::gitlab::Issue as GLIssue;
-// use crate::gitlab::IssueBuilder;
 use crate::gitlab;
 use crate::subcommand;
 use crate::utils::validator;
-// use crate::utils;
+use crate::utils::ShortCmd;
 
 #[derive(Debug, Deserialize)]
 pub struct MergeRequest {
@@ -154,6 +153,94 @@ merge request description. \
 NB: The current implementation requires that the GitLab-hosted git remote is called `origin`."
                     ),
             )
+            .subcommand(
+                clap::SubCommand::with_name("unlock")
+                    .about("Unlocks a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge Request ID to unlock")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("lock")
+                    .about("Locks a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to lock")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("reopen")
+                    .about("Re-opens a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to re-open")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for issue in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("close")
+                    .about("Closes a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge Request ID to close")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for issue in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
     }
 
     fn run(&self, config: config::Config, args: clap::ArgMatches) -> Result<()> {
@@ -168,10 +255,10 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
             // ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
             // ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
             // // ("status", Some(a)) => status::status_issues_cmd(a.clone(), config, *gitlabclient)?,
-            // ("close", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
-            // ("reopen", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
-            // ("lock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
-            // ("unlock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
+            ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
+            ("lock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
+            ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
