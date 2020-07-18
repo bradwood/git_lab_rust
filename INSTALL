@@ -11,4 +11,4 @@ Installation is easy:
 For example:
 
 sudo cp git-lab /usr/local/bin/
-sudo cp git-lab.1 /usr/local/share/man/man1/
+sudo cp man/git-lab.1 /usr/local/share/man/man1/
