@@ -1,8 +1,11 @@
 mod create;
+mod checkout;
 mod open;
 mod list;
 mod quick_edit;
 mod show;
+
+use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
@@ -52,6 +55,23 @@ pub struct MergeRequest {
     has_conflicts: bool,
     blocking_discussions_resolved: bool,
     squash: bool,
+}
+pub fn checkout_mr(source_branch: &str) -> Result<()> {
+
+    Command::new("git")
+        .args(&["fetch","origin"])
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()?
+        .wait()?;
+
+    Command::new("git")
+        .args(&["checkout","-b", source_branch, &("origin/".to_string() + source_branch)])
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()?
+        .wait()?;
+    Ok(())
 }
 
 pub fn generate_basic_mr_builder<'a>(
@@ -425,6 +445,29 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                     )
             )
             .subcommand(
+                clap::SubCommand::with_name("checkout")
+                    .about("Checks out a merge request locally")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .visible_aliases(&["co"])
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to checkout")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("reopen")
                     .about("Re-opens a merge request")
                     .setting(clap::AppSettings::ColoredHelp)
@@ -536,6 +579,7 @@ try `xdg-open(1)`.",
         match args.subcommand() {
             ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
+            ("checkout", Some(a)) => checkout::checkout_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,

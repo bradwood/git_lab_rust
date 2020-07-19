@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Context,  Result};
 use clap::value_t;
@@ -15,7 +14,7 @@ use crate::gitlab::{Client, CreateMergeRequest, Query};
 use crate::gitlab::Issue as GLIssue;
 use crate::gitlab::Branch as GLBranch;
 use crate::gitlab::CreateBranch as GLCreateBranch;
-use crate::mr::MergeRequest;
+use crate::mr::{checkout_mr, MergeRequest};
 use crate::utils;
 
 #[derive(GraphQLQuery)]
@@ -626,19 +625,7 @@ pub fn create_merge_request_cmd(
     println!("Merge Request created at: {}", merge_request.web_url);
 
     if args.occurrences_of("checkout") > 0 {
-        Command::new("git")
-            .args(&["fetch","origin"])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?
-            .wait()?;
-
-        Command::new("git")
-            .args(&["checkout","-b", &source_branch, &("origin/".to_string() + &source_branch)])
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?
-            .wait()?;
+        checkout_mr(&source_branch)?;
     }
 
     Ok(())
