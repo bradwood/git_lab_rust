@@ -157,12 +157,12 @@ fn print_issue(i: Issue) {
         let indent_md = indent(&md, "    ");
         println!("{}", &indent_md);
 
-        println!(
-            "{} {}",
-            "View this issue on GitLab:".italic().dimmed(),
-            i.web_url.italic().dimmed()
-        );
     }
+    println!(
+        "{} {}",
+        "View this issue on GitLab:".italic().dimmed(),
+        i.web_url.italic().dimmed()
+    );
 }
 
 pub fn show_issue_cmd(
