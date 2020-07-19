@@ -2,6 +2,7 @@ mod create;
 mod open;
 mod list;
 mod quick_edit;
+mod show;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
@@ -27,8 +28,10 @@ pub struct MergeRequest {
     state: String,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    merged_at: Option<DateTime<Utc>>,
     closed_at: Option<DateTime<Utc>>,
     closed_by: Option<Map<String, Value>>,
+    merged_by: Option<Map<String, Value>>,
     labels: Vec<String>,
     milestone: Option<String>,
     author: Map<String, Value>,
@@ -41,6 +44,14 @@ pub struct MergeRequest {
     task_completion_status: Option<Map<String, Value>>,
     references: Map<String, Value>,
     subscribed: Option<bool>,
+    target_branch: String,
+    source_branch: String,
+    work_in_progress: bool,
+    merge_when_pipeline_succeeds: bool,
+    merge_status: String,
+    has_conflicts: bool,
+    blocking_discussions_resolved: bool,
+    squash: bool,
 }
 
 pub fn generate_basic_mr_builder<'a>(
@@ -458,6 +469,29 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                     )
             )
             .subcommand(
+                clap::SubCommand::with_name("show")
+                    .about("Shows merge request information in the terminal")
+                    .visible_aliases(&["info", "get"])
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to show")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("open")
                     .about("Opens the merge request in the default browser")
                     .visible_aliases(&["view", "browse"])
@@ -502,21 +536,14 @@ try `xdg-open(1)`.",
         match args.subcommand() {
             ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
-            // ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
+            ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
-            // // ("status", Some(a)) => status::status_issues_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
             ("lock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
             _ => unreachable!(),
         }
-
-
-
-
-
-
 
         Ok(())
     }
