@@ -15,7 +15,7 @@ pub fn open_merge_request_cmd(args: clap::ArgMatches, config: config::Config, gi
 
     let mr: MergeRequest = endpoint
         .query(&gitlabclient)
-        .context("Failed to find issue")?;
+        .context("Failed to find merge request")?;
 
     match args.occurrences_of("url") {
         1u64..=std::u64::MAX => {
