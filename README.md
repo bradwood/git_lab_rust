@@ -24,6 +24,7 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
  * `issue` -- interact with issues
     * `issue create` -- create issue (either entirely via cli-passed parameters, or
        interactively, by prompting the user for the inputs needed)
+    * `issue assign` -- assign issue
     * `issue (open|view|browse)` -- open issue's URL in browser
     * `issue (show|info|get)` -- show details about a issue
     * `issue list` -- get list of issues
@@ -34,6 +35,7 @@ The tool is designed to work as a custom command to the vanilla `git` cli comman
  * `mr` -- interact with merge requests
     * `mr create` -- create merge request (either entirely via cli-passed parameters, or
        interactively, by prompting the user for the inputs needed)
+    * `mr assign` -- assign merge request
     * `mr close` -- close merge request
     * `mr reopen` -- reopen merge request
     * `mr lock` -- lock discussions on merge request
