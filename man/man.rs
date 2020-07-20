@@ -43,6 +43,12 @@ fn man() -> String {
             )
         .example(
             Example::new()
+                .text("Create a merge request")
+                .command("git lab mr create -a user1,user2,user3 ")
+                .output("Prompts the user through creating a merge request and then assigns it to to the three users passed.")
+            )
+        .example(
+            Example::new()
                 .text("Create a project issue interactively")
                 .command("git lab issue create")
                 .output("Prompts the user through entering each GitLab issue field and then creates the issue on the server.")
