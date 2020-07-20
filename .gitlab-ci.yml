@@ -1,4 +1,4 @@
-image: bradqwood/rust-build-docker:1.4.0
+image: bradqwood/rust-build-docker:1.4.1
 
 stages:
   - lint
@@ -17,6 +17,7 @@ lint:
       - .cargo/
   script:
     - rustup --version
+    - rustc --version
     - just lint
   only:
     - branches
