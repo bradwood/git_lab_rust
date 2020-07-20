@@ -270,10 +270,10 @@ form: `y, M, d, h, m, s`."
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
                         clap::Arg::with_name("id")
-                        .help("Issue ID")
-                        .takes_value(true)
-                        .empty_values(false)
-                        .required(true)
+                            .help("Issue ID")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
                     )
                     .arg(
                         clap::Arg::with_name("usernames")

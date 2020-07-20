@@ -16,6 +16,7 @@ pub enum ShortCmd {
     Reopen,
     Lock,
     Unlock,
+    Wip,
 }
 
 pub fn map_user_ids_from_names<'a>(members: &[String], v:Values<'a>) -> Result<Vec<u64>> {

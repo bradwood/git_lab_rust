@@ -8,6 +8,7 @@ mod show;
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Context, Result};
+use clap::ArgGroup;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -401,15 +402,52 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                     ),
             )
             .subcommand(
+                clap::SubCommand::with_name("wip")
+                    .about("Sets WIP status of merge request")
+                    .visible_alias("draft")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .group(ArgGroup::with_name("toggle")
+                        .required(true)
+                        )
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("off")
+                            .long("off")
+                            .help("Turns off WIP")
+                            .group("toggle")
+                    )
+                    .arg(
+                        clap::Arg::with_name("on")
+                            .long("on")
+                            .help("Turns on WIP")
+                            .group("toggle")
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("assign")
                     .about("Assigns a merge request")
                     .setting(clap::AppSettings::ColoredHelp)
                     .arg(
                         clap::Arg::with_name("id")
-                        .help("Merge request ID")
-                        .takes_value(true)
-                        .empty_values(false)
-                        .required(true)
+                            .help("Merge request ID")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
                     )
                     .arg(
                         clap::Arg::with_name("usernames")
@@ -617,6 +655,7 @@ try `xdg-open(1)`.",
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
             ("lock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
+            ("wip", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Wip, config, *gitlabclient)?,
             _ => unreachable!(),
         }
 
