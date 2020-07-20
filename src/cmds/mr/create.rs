@@ -150,7 +150,20 @@ fn get_current_remote_branch_name(repo_path: &PathBuf) -> Result<String> {
     }
 }
 
-/// Return a tuple withe local and tracking remote branch configs, if present
+fn refs_point_to_same_commit(repo_path: &PathBuf, r1: &str, r2: &str) -> bool {
+    (|| -> Result<bool>
+        {
+            let repo = Repository::open(&repo_path)?;
+            let ref1 = repo.resolve_reference_from_short_name(r1)?;
+            let ref2 = repo.resolve_reference_from_short_name(r2)?;
+            let commit1 = ref1.peel_to_commit()?.id();
+            let commit2 = ref2.peel_to_commit()?.id();
+            Ok(commit1 == commit2)
+        }
+    )().unwrap_or(false)
+}
+
+/// Return a tuple with local and tracking remote branch configs, if present
 /// stripping any remote prefixes (i.e. `origin/`)
 fn get_current_branch(repo_path: &PathBuf) -> (Option<String>, Option<String>) {
 
@@ -209,7 +222,7 @@ pub fn create_merge_request_cmd(
 
     let project_id = utils::get_proj_from_arg_or_conf(&args, &config)?;
 
-    let (commit_head, commit_body) = get_commit_details(&config.repo_path.as_ref().unwrap())?;
+    let (mut commit_head, mut commit_body) = get_commit_details(&config.repo_path.as_ref().unwrap())?;
 
     let defaultbranch = &config.defaultbranch.as_ref()
         .ok_or_else(|| anyhow!("Could not determine default remote branch - try `git lab project refresh`"))?;
@@ -217,6 +230,11 @@ pub fn create_merge_request_cmd(
     debug!("Default branch: {:#?}", defaultbranch);
 
     let (local_branch_name, remote_branch_name) = get_current_branch(&config.repo_path.as_ref().unwrap());
+
+    if refs_point_to_same_commit(&config.repo_path.as_ref().unwrap(), local_branch_name.as_ref().unwrap(), defaultbranch) {
+        commit_head = None;
+        commit_body = None;
+    };
 
     debug!("Local branch name: {:#?}", local_branch_name);
     debug!("Remote branch name: {:#?}", remote_branch_name);
@@ -252,13 +270,13 @@ pub fn create_merge_request_cmd(
 
     let interactive_title: String;
 
-    //FIXME: should not really pre-populate the title from a commit if the commit is the base one
-    //from master's head, which happens when a branch is freshly created....
     let title = match (args.value_of("title"), issue_arg) {
         (Some(t), _) => Ok(t.to_string()),
         (_, Some(_)) => resolves_issue_mr_title(Ok(&issue_title.unwrap().as_str())),
         (None, None) => {
-            if commit_head.is_some() && local_branch_name != Some(defaultbranch.to_string()) {
+            if commit_head.is_some()
+            && local_branch_name != Some(defaultbranch.to_string())
+            {
                 interactive_title = Input::<String>::new()
                     .with_prompt("Title")
                     .allow_empty(false)
