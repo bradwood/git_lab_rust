@@ -8,6 +8,7 @@ TMUX_WIN1_NAME=vim
 TMUX_WIN2_NAME=shell
 TMUX_WIN3_NAME=gitlab-lib
 TMUX_WIN4_NAME=local-runners
+TMUX_WIN5_NAME=rust-build-docker
 
 export NVIM_LISTEN_ADDRESS=/tmp/nvimsocket.$TMUX_SESS_NAME
 
@@ -39,6 +40,14 @@ tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "cd ~/Code/gitlab-runners-loca
 tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "vim -c CommandTBoot" Enter
 tmux split-window -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME -h
 tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "cd ~/Code/gitlab-runners-local/ " Enter
+
+# create build docker window
+tmux new-window -n $TMUX_WIN5_NAME
+tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN5_NAME "cd ~/Code/rust-projects/rust-build-docker/ " Enter
+tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN5_NAME "vim -c CommandTBoot" Enter
+tmux split-window -t $TMUX_SESS_NAME:$TMUX_WIN5_NAME -h
+tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN5_NAME "cd ~/Code/rust-projects/rust-build-docker/ " Enter
+
 
 tmux attach -t $TMUX_SESS_NAME:$TMUX_WIN1_NAME.1
 
