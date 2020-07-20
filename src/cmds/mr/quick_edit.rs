@@ -25,18 +25,22 @@ pub fn quick_edit_mr_cmd(
         ShortCmd::Reopen => m.state_event(MergeRequestStateEvent::Reopen),
         ShortCmd::Lock => m.discussion_locked(true),
         ShortCmd::Unlock => m.discussion_locked(false),
+        ShortCmd::Assign => {
+            let assign_ids = utils::map_user_ids_from_names(&config.members, args.values_of("usernames").unwrap())?;
+            m.assignees(assign_ids.into_iter())
+        }
     };
 
     let endpoint = m
         .build()
-        .map_err(|e| anyhow!("Could not construct issue edit query.\n{}", e))?;
+        .map_err(|e| anyhow!("Could not construct edit query.\n{}", e))?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);
 
     api::ignore(endpoint)
         .query(&gitlabclient)
-        .context("Failed to update issue")?;
+        .context("Failed to update merge request")?;
 
     Ok(())
 }

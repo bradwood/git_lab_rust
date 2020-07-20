@@ -11,6 +11,7 @@ use crate::config::OutputFormat;
 
 #[derive(Debug)]
 pub enum ShortCmd {
+    Assign,
     Close,
     Reopen,
     Lock,

@@ -25,11 +25,15 @@ pub fn quick_edit_issue_cmd(
         ShortCmd::Reopen => i.state_event(IssueStateEvent::Reopen),
         ShortCmd::Lock => i.discussion_locked(true),
         ShortCmd::Unlock => i.discussion_locked(false),
+        ShortCmd::Assign => {
+            let assign_ids = utils::map_user_ids_from_names(&config.members, args.values_of("usernames").unwrap())?;
+            i.assignee_ids(assign_ids.into_iter())
+        }
     };
 
     let endpoint = i
         .build()
-        .map_err(|e| anyhow!("Could not construct issue edit query.\n{}", e))?;
+        .map_err(|e| anyhow!("Could not construct edit query.\n{}", e))?;
 
     debug!("args: {:#?}", args);
     debug!("endpoint: {:#?}", endpoint);

@@ -401,6 +401,36 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                     ),
             )
             .subcommand(
+                clap::SubCommand::with_name("assign")
+                    .about("Assigns a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                        .help("Merge request ID")
+                        .takes_value(true)
+                        .empty_values(false)
+                        .required(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("usernames")
+                            .help("Assignee username(s)")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .multiple(true)
+                            .require_delimiter(true)
+                            .required(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("unlock")
                     .about("Unlocks a merge request")
                     .setting(clap::AppSettings::ColoredHelp)
@@ -448,7 +478,7 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                 clap::SubCommand::with_name("checkout")
                     .about("Checks out a merge request locally")
                     .setting(clap::AppSettings::ColoredHelp)
-                    .visible_aliases(&["co"])
+                    .visible_alias("co")
                     .arg(
                         clap::Arg::with_name("id")
                             .help("Merge request ID to checkout")
@@ -583,6 +613,7 @@ try `xdg-open(1)`.",
             ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("assign", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Assign, config, *gitlabclient)?,
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
             ("lock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,

@@ -265,6 +265,36 @@ form: `y, M, d, h, m, s`."
                     ),
             )
             .subcommand(
+                clap::SubCommand::with_name("assign")
+                    .about("Assigns an issue")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                        .help("Issue ID")
+                        .takes_value(true)
+                        .empty_values(false)
+                        .required(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("usernames")
+                            .help("Assignee username(s)")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .multiple(true)
+                            .require_delimiter(true)
+                            .required(true)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for issue in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("unlock")
                     .about("Unlocks an issue")
                     .setting(clap::AppSettings::ColoredHelp)
@@ -509,6 +539,7 @@ try `xdg-open(1)`.",
             ("show", Some(a)) => show::show_issue_cmd(a.clone(), config, *gitlabclient)?,
             ("list", Some(a)) => list::list_issues_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("assign", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Assign, config, *gitlabclient)?,
             ("reopen", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
             ("lock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_issue_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
