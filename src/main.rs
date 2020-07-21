@@ -42,6 +42,7 @@
 //!     * `mr (open|view|browse)` -- open merge request's URL in browser
 //!     * `mr (show|info|get)` -- show details about a merge request
 //!     * `mr (checkout|co)` -- checkout merge request
+//!     * `mr wip` -- toggle `WIP:` (or `Draft:`) status of merge request
 //!
 //! ## Planned functions
 //!
