@@ -720,7 +720,7 @@ dependencies = [
 
 [[package]]
 name = "git_lab_cli"
-version = "0.15.3"
+version = "0.15.4"
 dependencies = [
  "anyhow",
  "assert_cmd",
