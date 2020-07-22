@@ -7,7 +7,8 @@ linkname="${TARBALL}"
 linkurl="${baseurl}/jobs/${CI_JOB_ID}/artifacts/${fullname}"
 linklist="[{\"name\": \"${linkname}\", \"url\": \"${linkurl}\"}]"
 
-descr="$(curl -H \"PRIVATE-TOKEN:\ ${PRIVATE_TOKEN}\" ${baseurl}/repository/tags/${CI_COMMIT_TAG}|jq -r '.message')"
+# descr="$(curl -H \"PRIVATE-TOKEN:\ ${PRIVATE_TOKEN}\" ${baseurl}/repository/tags/${CI_COMMIT_TAG}|jq -r '.message')"
+descr="$(./ci/relnotes.sh.sh ${CI_PROJECT_ID})"
 
 DATA="
 {
