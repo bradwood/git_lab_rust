@@ -11,6 +11,10 @@
 //!
 //! The tool is designed to work as a custom command to the vanilla `git` cli command.
 //!
+//! ## Change Log
+//!
+//! See [CHANGELOG.md](CHANGELOG.md) for a summary of fixes and features added to each release.
+//!
 //! ## Current functions
 //!
 //!  * `init` -- initialise credentials against a remote GitLab server
