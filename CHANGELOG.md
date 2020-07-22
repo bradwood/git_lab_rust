@@ -3,6 +3,10 @@
 This is the log of all commits by each release. Earlier commit history is a
 little untidy, but it should be cleaner for newer releases.
 
+## Version 0.15.2 released on 2020-07-23
+ - fix: typo in release.sh script 
+ - fix: fix error in justfile changelog generation script 
+
 ## Version 0.15.1 released on 2020-07-23
  - feat: auto generate release notes from ci 
  - feat: add autogenerating CHANGELOG.md 
