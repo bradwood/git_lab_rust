@@ -87,7 +87,7 @@ bump-patch:
 	git add Cargo.lock Cargo.toml README.md
 	git commit -m "rel: $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')"
 	git tag  $(grep version Cargo.toml | head -1 | awk '{print $3}' | sed 's/\"//g')
-	./ci/relnotes.sh > CHANGELOG.md
+	./ci/changelog.sh > CHANGELOG.md
 	git add CHANGELOG.md
 	git commit -m "docs: update CHANGELOG.md"
 	git push; git push --tags
