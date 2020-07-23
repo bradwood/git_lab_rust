@@ -164,7 +164,7 @@ fn get_project_members(project_id: u64, max_members: u64, gitlabclient: &gitlab:
     debug!("project members: {:#?}", p_members);
 
     a_members.append(&mut p_members);
-    a_members.sort_by(|a,b| b.username.cmp(&a.username));
+    a_members.sort_by(|a,b| a.username.cmp(&b.username));
     a_members.dedup();
 
     debug!("final sorted and deduped members: {:#?}", a_members);
