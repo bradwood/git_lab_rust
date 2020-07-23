@@ -3,6 +3,9 @@
 This is the log of all commits by each release. Earlier commit history is a
 little untidy, but it should be cleaner for newer releases.
 
+## Version 0.15.5 released on 2020-07-23
+ - fix: revert gitlab release description injection 
+
 ## Version 0.15.4 released on 2020-07-23
  - fix: extend artifact expiry date to 1 year 
 
