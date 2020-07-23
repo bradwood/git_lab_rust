@@ -3,6 +3,9 @@
 This is the log of all commits by each release. Earlier commit history is a
 little untidy, but it should be cleaner for newer releases.
 
+## Version 0.15.6 released on 2020-07-23
+ - fix: make proj attach include ancestors and sort cache 
+
 ## Version 0.15.5 released on 2020-07-23
  - fix: revert gitlab release description injection 
 
