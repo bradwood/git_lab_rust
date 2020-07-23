@@ -18,7 +18,6 @@ use crate::utils::validator;
 use crate::utils;
 use crate::utils::ShortCmd;
 
-
 #[derive(Debug, Deserialize)]
 pub struct Issue {
     id: u64,
@@ -34,6 +33,7 @@ pub struct Issue {
     labels: Vec<String>,
     milestone: Option<String>,
     author: Map<String, Value>,
+    // FIXME: assignees is there all the time, remove the Option at some point
     assignees: Option<Vec<Map<String, Value>>>,
     user_notes_count: u64,
     merge_requests_count: u64,
@@ -219,20 +219,62 @@ impl subcommand::SubCommand for IssueCmd<'_> {
                             .help("Fetch only confidential issues")
                     )
                     .arg(
+                        clap::Arg::with_name("fields")
+                            .long("fields")
+                            .short("F")
+                            .help("Specify which fields to output")
+                            .takes_value(true)
+                            .multiple(true)
+                            .require_delimiter(true)
+                            .possible_values(
+                                &[
+                                "assignees",
+                                "author",
+                                "closed_by",
+                                "closed_on", // closed_at
+                                "confidential",
+                                "created_on", // created_at
+                                "downvotes",
+                                "due_date",
+                                "id", // iid
+                                "labels",
+                                "locked", // discussion_locked
+                                "mr", // merge_requests_count
+                                "state",
+                                "subscribed",
+                                "title",
+                                "updated_on",  // updated_at
+                                "upvotes",
+                                "weight",
+                                ])
+                            .default_value("id,title,created_on")
+                    )
+                    .arg(
+                        clap::Arg::with_name("no_headers")
+                            .long("no_headers")
+                            .help("Suppress header row on text output")
+                    )
+                    .arg(
+                        clap::Arg::with_name("human_friendly")
+                            .short("h")
+                            .help("Use human-friendly date-time strings")
+                    )
+                    .arg(
                         clap::Arg::with_name("order_by")
                             .long("order_by")
                             .short("o")
                             .help("Order results by given field")
                             .takes_value(true)
                             .possible_values(
-                                &["created_on",
-                                "updated_on",
-                                "priority",
+                                &[
+                                "created_on",
                                 "due_date",
-                                "relative_position",
                                 "label_priority",
                                 "milestone_date",
                                 "popularity",
+                                "priority",
+                                "relative_position",
+                                "updated_on",
                                 "weight",
                                 ])
                             .default_value("created_on")

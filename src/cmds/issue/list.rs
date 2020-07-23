@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Utc};
+use chrono::{Utc, DateTime, Local};
 use chrono_humanize::HumanTime;
-use clap::value_t_or_exit;
+use clap::{value_t_or_exit, values_t_or_exit};
 use comfy_table::*;
-use serde::Deserialize;
 
 use crate::config;
 use crate::config::OutputFormat;
@@ -12,14 +11,7 @@ use crate::gitlab::converter::{
 };
 use crate::gitlab::{api, Client, IssueWeight, Issues, IssuesBuilder, Query, SortOrder};
 use crate::utils;
-
-#[derive(Debug, Deserialize)]
-pub struct Issue {
-    iid: u64,
-    title: String,
-    state: String,
-    created_at: DateTime<Utc>,
-}
+use crate::cmds::issue::Issue;
 
 pub fn generate_issues_builder<'a>(
     args: &'a clap::ArgMatches,
@@ -58,7 +50,11 @@ pub fn generate_issues_builder<'a>(
             }
             "descending" => i.sort(SortOrder::Descending),
             "ascending" => i.sort(SortOrder::Ascending),
+            // presentational arguments
             "max" => i,
+            "fields" => i,
+            "no_headers" => i,
+            "human_friendly" => i,
             _ => unreachable!(),
         };
     }
@@ -66,32 +62,140 @@ pub fn generate_issues_builder<'a>(
         .map_err(|e| anyhow!("Could not construct issues query.\n {}", e))
 }
 
-fn print_issues(issues: Vec<Issue>) {
+fn print_issues(issues: Vec<Issue>, fields: Vec<String>, no_headers: bool, human: bool) {
     let mut table = Table::new();
+
     table
         .load_preset("                   ")
         .set_content_arrangement(ContentArrangement::Dynamic);
 
+    if !no_headers {
+        table.add_row(fields.iter().map(|f| Cell::new(f.to_uppercase().replace("_"," ")).set_alignment(CellAlignment::Center)));
+    }
+
     for i in issues {
-        let create_date  = format!("{}", HumanTime::from(i.created_at));
+        let mut r: Vec<Cell> =Vec::new();
 
-        let id = if i.state == "opened" {
-            Cell::new(i.iid).add_attribute(Attribute::Bold).fg(Color::Yellow)
+        for field in &fields {
+            match field.as_str() {
+                "assignees" => {
+                    if i.assignees.is_some() {
+                        r.push(
+                            Cell::new(
+                                i.assignees.clone()
+                                .unwrap()
+                                .iter()
+                                .map(|a| a["username"].as_str().unwrap().to_string())
+                                .collect::<Vec<String>>().join(",")
+                            )
+                        )
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "author" => r.push(Cell::new(i.author["username"].as_str().unwrap())),
+                "closed_by" => {
+                    if i.closed_by.is_some() {
+                        r.push(Cell::new(i.closed_by.clone().unwrap()["username"].as_str().unwrap()))
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "closed_on" => {
+                    if i.closed_at.is_some() {
+                        if human {
+                            r.push(Cell::new(HumanTime::from(i.closed_at.unwrap())))
+                        } else {
+                            let d: DateTime<Local> = DateTime::from(i.closed_at.unwrap());
+                            r.push(Cell::new(d.format("%Y-%m-%d %H:%M:%S").to_string()))
+                        }
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "confidential" => {
+                    if i.confidential {
+                        r.push(Cell::new("y").set_alignment(CellAlignment::Center))
+                    } else {
+                        r.push(Cell::new("n").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "created_on" =>
+                        if human {
+                            r.push(Cell::new(HumanTime::from(i.created_at)))
+                        } else {
+                            let d: DateTime<Local> = DateTime::from(i.created_at);
+                            r.push(Cell::new(d.format("%Y-%m-%d %H:%M:%S").to_string()))
+                        }
+                "downvotes" => r.push(Cell::new(i.downvotes).set_alignment(CellAlignment::Right)),
+                "due_date" =>
+                    if i.due_date.is_some() {
+                        r.push(Cell::new(i.due_date.unwrap()))
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Center))
+                    },
+                "id" => r.push(Cell::new(i.iid).set_alignment(CellAlignment::Right)),
+                "labels" => {
+                    if !i.labels.is_empty() {
+                        r.push(
+                            Cell::new(
+                                i.labels.join(",")
+                            )
+                        )
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "locked" => {
+                    if i.discussion_locked.is_some() && i.discussion_locked.unwrap() {
+                        r.push(Cell::new("y").set_alignment(CellAlignment::Center))
+                    } else {
+                        r.push(Cell::new("n").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "mr" => r.push(Cell::new(i.merge_requests_count).set_alignment(CellAlignment::Right)),
+                "state" => r.push(Cell::new(i.state.clone())),
+                "subscribed" => {
+                    if i.subscribed.is_some() && i.subscribed.unwrap() {
+                        r.push(Cell::new("y").set_alignment(CellAlignment::Center))
+                    } else {
+                        r.push(Cell::new("n").set_alignment(CellAlignment::Center))
+                    }
+                },
+                "title" => r.push(Cell::new(i.title.clone())),
+                "updated_on" => 
+                        if human {
+                            r.push(Cell::new(HumanTime::from(i.updated_at)))
+                        } else {
+                            let d: DateTime<Local> = DateTime::from(i.updated_at);
+                            r.push(Cell::new(d.format("%Y-%m-%d %H:%M:%S").to_string()))
+                        }
+                "upvotes" => r.push(Cell::new(i.upvotes).set_alignment(CellAlignment::Right)),
+                "weight" =>
+                    if i.weight.is_some() {
+                        r.push(Cell::new(i.weight.unwrap()).set_alignment(CellAlignment::Right))
+                    } else {
+                        r.push(Cell::new("-").set_alignment(CellAlignment::Right))
+                    },
+                _ => unreachable!(""),
+            }
+        }
+
+        if i.state == "opened" {
+            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Bold)).collect();
         } else {
-            Cell::new(i.iid).add_attribute(Attribute::Dim)
-        };
+            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Dim)).collect();
+        }
 
-        let title = if i.state == "opened" {
-            Cell::new(i.title).add_attribute(Attribute::Bold)
+        if i.state == "opened" {
+            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Bold)).collect();
+        } else if i.state == "closed" {
+            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Dim)).collect();
         } else {
-            Cell::new(i.title).add_attribute(Attribute::Dim)
-        };
+            // r = r.iter().map(|f| f.clone().fg(Color::Yellow)).collect();
+        }
 
-        table.add_row(vec![
-            id,
-            title,
-            Cell::new("about ".to_string() + &create_date).add_attribute(Attribute::Dim),
-        ]);
+        table.add_row(r);
     }
     println!("{}", table);
 }
@@ -124,7 +228,12 @@ pub fn list_issues_cmd(
                 .query(&gitlabclient)
                 .context("Failed to query issues")?;
 
-            print_issues(issues);
+            print_issues(
+                issues,
+                values_t_or_exit!(args, "fields", String),
+                args.occurrences_of("no_headers")>0,
+                args.occurrences_of("human_friendly")>0
+                );
 
             Ok(())
         }
