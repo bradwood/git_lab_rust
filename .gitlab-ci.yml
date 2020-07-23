@@ -19,8 +19,8 @@ lint:
     - rustup --version
     - rustc --version
     - just lint
-  only:
-    - branches
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
 
 test:
   stage: test
@@ -35,27 +35,21 @@ test:
     expire_in: 1 week
     paths:
       - tarp/tarpaulin-report.html
-  only:
-    - branches
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
 
 publish to crates.io:
   stage: publish
-  only:
-    - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
-  except:
-    - branches
   script:
     # check that the git tag semver string is the same as the string in Cargo.toml
     - test $(grep version Cargo.toml| head -1 | cut -f3 -d\ ) = \"$CI_COMMIT_TAG\"
     - cargo publish --token $CRATES_DOT_IO_KEY --allow-dirty
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^(\d+\.)?(\d+\.)?(\*|\d+)$/'
 
 build musl package:
   stage: build
   image: registry.gitlab.com/rust_musl_docker/image:stable-latest
-  only:
-    - /^(\d+\.)?(\d+\.)?(\*|\d+)$/
-  except:
-    - branches
   script:
     - apt-get update -qq && apt-get -y -qq install jq
     - export BUILD_DIR=git_lab_cli-${CI_COMMIT_TAG}-x86_64-unknown-linux-musl
@@ -74,3 +68,5 @@ build musl package:
     paths:
       - git_lab_cli*.tar.gz
     expire_in: 12 mos
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^(\d+\.)?(\d+\.)?(\*|\d+)$/'
