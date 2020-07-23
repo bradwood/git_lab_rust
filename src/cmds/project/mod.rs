@@ -109,6 +109,26 @@ to use. If this is not set, on Linux, it will try `xdg-open(1)`",
                             .takes_value(true)
                             .validator(validator::check_u64)
                     )
+                    .arg(
+                        clap::Arg::with_name("max_members")
+                            .short("m")
+                            .long("max_members")
+                            .help("Maximum number of project member details to cache locally")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .default_value("80")
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("max_labels")
+                            .short("l")
+                            .long("max_labels")
+                            .help("Maximum number of labels to cache locally")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .default_value("80")
+                            .validator(validator::check_u64)
+                    )
                     .after_help(
 "Attaching/refreshing makes a permanent configuration change to the local repo using standard \
 git-config(1) machinery. It associates the local repo with a GitLab project and caches project \

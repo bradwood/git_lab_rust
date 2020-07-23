@@ -4,6 +4,7 @@
 //! GitLab server. If found, it will update and persist local repo-specific config to contain the
 //! GitLab project's ID so that other project-specific commands can use it.
 use anyhow::{anyhow, Context, Result};
+use clap::value_t;
 use git2::Repository;
 use graphql_client::GraphQLQuery;
 use lazy_static::lazy_static;
@@ -125,25 +126,50 @@ fn get_proj_id_by_remote(url: &str, gitlabclient: &gitlab::Client) -> Result<u64
     Ok(p_id)
 }
 
-fn get_project_members(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
-    let mut members_builder = GLMembers::all_builder();
-    let endpoint = members_builder.project(project_id).build()
-        .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
+// Note that this function implements a workaround for a buggy Gitlab API. The include ancestors
+// endpoint should _include_ ancestors, but instead it returns _only_ ancestors(!) so doing two
+// calls and merging the results.
+fn get_project_members(project_id: u64, max_members: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
 
-    debug!("endpoint: {:#?}", endpoint);
-
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
     struct Member {
         id: u64,
         username: String
     }
 
-    let members: Vec<Member> = endpoint
+    // ancestor members
+    let mut a_members_builder = GLMembers::all_builder();
+    let a_endpoint = a_members_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
+
+    debug!("ancestor members endpoint: {:#?}", a_endpoint);
+
+    let mut a_members: Vec<Member> = api::paged(a_endpoint, api::Pagination::Limit(max_members as usize))
         .query(gitlabclient)
         .context("Failed to query project members")?;
 
-    debug!("members: {:#?}", members);
-    Ok(members.iter().map(|m| format!("{}:{}", m.id.to_string(), m.username.clone())).collect())
+    debug!("ancestor members: {:#?}", a_members);
+
+    // project members
+    let mut p_members_builder = GLMembers::builder();
+    let p_endpoint = p_members_builder.project(project_id).build()
+        .map_err(|e| anyhow!("Could not fetch project members from server.\n {}",e))?;
+
+    debug!("project members endpoint: {:#?}", p_endpoint);
+
+    let mut p_members: Vec<Member> = api::paged(p_endpoint, api::Pagination::Limit(max_members as usize))
+        .query(gitlabclient)
+        .context("Failed to query project members")?;
+
+    debug!("project members: {:#?}", p_members);
+
+    a_members.append(&mut p_members);
+    a_members.sort_by(|a,b| b.username.cmp(&a.username));
+    a_members.dedup();
+
+    debug!("final sorted and deduped members: {:#?}", a_members);
+
+    Ok(a_members.iter().map(|m| format!("{}:{}", m.id.to_string(), m.username.clone())).collect())
 }
 
 fn get_project_path_with_namespace(project_id: u64, gitlabclient: &gitlab::Client) -> Result<String> {
@@ -186,22 +212,23 @@ fn get_project_defaultbranch(project_id: u64, gitlabclient: &gitlab::Client) -> 
     Ok(project.default_branch)
 }
 
-fn get_project_labels(project_id: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
+fn get_project_labels(project_id: u64, max_labels: u64, gitlabclient: &gitlab::Client) -> Result<Vec<String>> {
     let mut labels_builder = GLLabels::builder();
     let endpoint = labels_builder.project(project_id).build()
         .map_err(|e| anyhow!("Could not fetch project labels from server.\n {}",e))?;
 
     debug!("endpoint: {:#?}", endpoint);
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
     struct Label {
         name: String
     }
 
-    let labels: Vec<Label> = api::paged(endpoint, api::Pagination::Limit(80))
+    let mut labels: Vec<Label> = api::paged(endpoint, api::Pagination::Limit(max_labels as usize))
         .query(gitlabclient)
         .context("Failed to query project labels")?;
 
+    labels.sort();
     debug!("labels: {:#?}", labels);
     Ok(labels.iter().map(|l| l.name.clone()).collect())
 }
@@ -212,14 +239,11 @@ pub fn attach_project_cmd(args: clap::ArgMatches, mut config: config::Config, gi
 
     debug!("config: {:#?}", &config);
 
-    let project_id = match (&get_git_remote(&config), args) {
+    let project_id = match (&get_git_remote(&config), &args) {
         (Some(r), a) if !a.is_present("project_id") => {
             get_proj_id_by_remote(r, &gitlabclient)
                 .with_context(|| format!("Could not look up GitLab project using 'origin' remote '{}'", r))
-                .context("
-Your GitLab server is probably not at a version with decent GraphQL support. You can work round \
-this by manually obtaining the project's ID from the GUI and adding it to your repo's config like so: \n\n\
-    git lab project attach -p <project_id>")
+                .context("Your GitLab server is probably not at a version with decent GraphQL support.")
         },
         (_, a) if a.is_present("project_id") => {
             a.value_of("project_id").unwrap().parse::<u64>().map_err(|e| anyhow!(e))
@@ -234,8 +258,8 @@ this by manually obtaining the project's ID from the GUI and adding it to your r
     config.projectid = Some(project_id);
     config.defaultbranch = get_project_defaultbranch(project_id, &gitlabclient).ok();
     config.path_with_namespace = get_project_path_with_namespace(project_id, &gitlabclient).ok();
-    config.labels = get_project_labels(project_id, &gitlabclient)?;
-    config.members = get_project_members(project_id, &gitlabclient)?;
+    config.labels = get_project_labels(project_id, value_t!(args, "max_labels", u64).unwrap(), &gitlabclient)?;
+    config.members = get_project_members(project_id, value_t!(args, "max_members", u64).unwrap(), &gitlabclient)?;
     config.save(config::GitConfigSaveableLevel::Repo)?;
 
     let out_vars = vec!(("project_id".to_string(), project_id.to_string())).into_iter();
