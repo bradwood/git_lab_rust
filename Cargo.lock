@@ -720,7 +720,7 @@ dependencies = [
 
 [[package]]
 name = "git_lab_cli"
-version = "0.15.7"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1038,6 +1038,12 @@ checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "ipnet"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47be2f14c678be2fdcab04ab1171db51b2762ce6f0a8ee87c8dd4a04ed216135"
 
 [[package]]
 name = "itertools"
@@ -1730,9 +1736,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b82c9238b305f26f53443e3a4bc8528d64b8d0bee408ec949eb7bf5635ec680"
+checksum = "12427a5577082c24419c9c417db35cfeb65962efc7675bb6b0d5f1f9d315bfe6"
 dependencies = [
  "base64",
  "bytes",
@@ -1743,6 +1749,7 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-tls",
+ "ipnet",
  "js-sys",
  "lazy_static",
  "log",
