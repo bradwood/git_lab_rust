@@ -3,6 +3,10 @@
 This is the log of all commits by each release. Earlier commit history is a
 little untidy, but it should be cleaner for newer releases.
 
+## Version 0.16.0 released on 2020-07-24
+ - feat: add --fields to merge request list command 
+ - feat: add --fields to issue list cmd 
+
 ## Version 0.15.7 released on 2020-07-23
  - fix: reverse sort order in member project refresh cache 
 
