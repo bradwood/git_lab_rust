@@ -259,6 +259,50 @@ impl subcommand::SubCommand for MergeRequestCmd<'_> {
                             .help("Fetch merge requests which are works in progress")
                     )
                     .arg(
+                        clap::Arg::with_name("fields")
+                            .long("fields")
+                            .short("F")
+                            .help("Specify which fields to output")
+                            .takes_value(true)
+                            .multiple(true)
+                            .require_delimiter(true)
+                            .possible_values(
+                                &[
+                                "assignees",
+                                "author",
+                                "closed_by",
+                                "closed_on",
+                                "created_on", // created_at
+                                "downvotes",
+                                "has_conflicts",
+                                "id", // iid
+                                "labels",
+                                "locked", // discussion_locked
+                                "merged_by",
+                                "merged_on", // merged_at
+                                // "merge_status",
+                                "state",
+                                "subscribed",
+                                "title",
+                                "source_branch",
+                                "target_branch",
+                                "updated_on",  // updated_at
+                                "upvotes",
+                                "wip",
+                                ])
+                            .default_value("id,title,created_on")
+                    )
+                    .arg(
+                        clap::Arg::with_name("no_headers")
+                            .long("no_headers")
+                            .help("Suppress header row on text output")
+                    )
+                    .arg(
+                        clap::Arg::with_name("human_friendly")
+                            .short("h")
+                            .help("Use human-friendly date-time strings")
+                    )
+                    .arg(
                         clap::Arg::with_name("order_by")
                             .long("order_by")
                             .short("o")
