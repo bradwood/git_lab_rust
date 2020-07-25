@@ -187,14 +187,6 @@ fn print_issues(issues: Vec<Issue>, fields: Vec<String>, no_headers: bool, human
             r = r.iter().map(|f| f.clone().add_attribute(Attribute::Dim)).collect();
         }
 
-        if i.state == "opened" {
-            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Bold)).collect();
-        } else if i.state == "closed" {
-            r = r.iter().map(|f| f.clone().add_attribute(Attribute::Dim)).collect();
-        } else {
-            // r = r.iter().map(|f| f.clone().fg(Color::Yellow)).collect();
-        }
-
         table.add_row(r);
     }
     println!("{}", table);

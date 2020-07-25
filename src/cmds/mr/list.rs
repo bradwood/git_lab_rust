@@ -218,9 +218,6 @@ fn print_mrs(mrs: Vec<MergeRequest>, fields: Vec<String>, no_headers: bool, huma
         } else if m.state == "closed" {
             r = r.iter().map(|f| f.clone().add_attribute(Attribute::Dim)).collect();
         }
-        // else {
-        //     // r = r.iter().map(|f| f.clone().fg(Color::Yellow)).collect();
-        // }
 
         table.add_row(r);
     }
