@@ -39,7 +39,10 @@ tmux new-window -n $TMUX_WIN4_NAME
 tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "cd ~/Code/gitlab-runners-local/ " Enter
 tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "vim -c CommandTBoot" Enter
 tmux split-window -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME -h
-tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "cd ~/Code/gitlab-runners-local/ " Enter
+tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "htop " Enter
+tmux split-window -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME -v
+tmux send-keys -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME "docker stats " Enter
+tmux split-window -t $TMUX_SESS_NAME:$TMUX_WIN4_NAME -v
 
 # create build docker window
 tmux new-window -n $TMUX_WIN5_NAME
