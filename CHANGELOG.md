@@ -3,6 +3,13 @@
 This is the log of all commits by each release. Earlier commit history is a
 little untidy, but it should be cleaner for newer releases.
 
+## Version 0.17.0 released on 2020-07-27
+ - feat: add merge request rebase (for ff merge model) 
+ - feat: add merge request merge 
+ - feat: add merge request unapprove 
+ - feat: add merge request approve 
+ - refactor: move ShortCmd from utils to mr/issue mod.rs 
+
 ## Version 0.16.0 released on 2020-07-24
  - feat: add --fields to merge request list command 
  - feat: add --fields to issue list cmd 
