@@ -1,10 +1,11 @@
 mod approve;
-mod create;
 mod checkout;
-mod open;
+mod create;
 mod list;
+mod open;
 mod quick_edit;
 mod show;
+mod unapprove;
 
 use std::process::{Command, Stdio};
 
@@ -788,7 +789,6 @@ try `xdg-open(1)`.",
 
         match args.subcommand() {
             ("approve", Some(a)) => approve::approve_mr_cmd(a.clone(), config, *gitlabclient)?,
-            // ("approve", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Approve, config, *gitlabclient)?,
             ("assign", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Assign, config, *gitlabclient)?,
             ("checkout", Some(a)) => checkout::checkout_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
@@ -800,7 +800,7 @@ try `xdg-open(1)`.",
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
             // ("rebase", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Rebase, config, *gitlabclient)?,
             ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
-            // ("unapprove", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unapprove, config, *gitlabclient)?,
+            ("unapprove", Some(a)) => unapprove::unapprove_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
             ("wip", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Wip, config, *gitlabclient)?,
             _ => unreachable!(),
