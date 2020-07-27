@@ -46,17 +46,16 @@
 //!     * `mr (show|info|get)` -- show details about a merge request
 //!     * `mr (checkout|co)` -- checkout merge request
 //!     * `mr wip` -- toggle `WIP:` (or `Draft:`) status of merge request
+//!     * `mr approve` -- approve merge request
+//!     * `mr merge` -- merge merge request
 //!
 //! ## Planned functions
 //!
-//!  * `mr` -- interact with merge requests
-//!     * `mr approve` -- approve merge request
-//!     * `mr merge` -- merge merge request
+//!  * `labels` -- interact with Gitlab labels
 //!  * `project list` -- get list of projects
 //!  * `pipeline` -- interact with Gitlab CI jobs
 //!  * `group` -- interact with Gitlab groups
 //!  * `user` -- interact with Gitlab users
-//!  * `labels` -- interact with Gitlab labels
 //!  * probably others...
 //!
 //! # Features
