@@ -1,3 +1,4 @@
+mod approve;
 mod create;
 mod checkout;
 mod open;
@@ -544,6 +545,94 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                     )
             )
             .subcommand(
+                clap::SubCommand::with_name("rebase")
+                    .about("Rebases a merge request (used for fast-forward merge model)")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Rebase request ID to merge")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("merge")
+                    .about("Merges a merge request (when pipeline succeeds)")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to merge")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("unapprove")
+                    .about("Unapproves a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to unapprove")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
+                clap::SubCommand::with_name("approve")
+                    .about("Approves a merge request")
+                    .setting(clap::AppSettings::ColoredHelp)
+                    .arg(
+                        clap::Arg::with_name("id")
+                            .help("Merge request ID to approve")
+                            .takes_value(true)
+                            .empty_values(false)
+                            .required(true)
+                            .validator(validator::check_u64)
+                    )
+                    .arg(
+                        clap::Arg::with_name("project_id")
+                            .short("p")
+                            .long("project_id")
+                            .help("Project ID to look for merge request in. Defaults to attached Project ID.")
+                            .empty_values(false)
+                            .takes_value(true)
+                            .validator(validator::check_u64)
+                    )
+            )
+            .subcommand(
                 clap::SubCommand::with_name("lock")
                     .about("Locks a merge request")
                     .setting(clap::AppSettings::ColoredHelp)
@@ -698,15 +787,20 @@ try `xdg-open(1)`.",
         let gitlabclient = gitlab::new(&config).context("Could not create GitLab client connection.")?;
 
         match args.subcommand() {
-            ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
-            ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
-            ("checkout", Some(a)) => checkout::checkout_merge_request_cmd(a.clone(), config, *gitlabclient)?,
-            ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
-            ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
-            ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("approve", Some(a)) => approve::approve_mr_cmd(a.clone(), config, *gitlabclient)?,
+            // ("approve", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Approve, config, *gitlabclient)?,
             ("assign", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Assign, config, *gitlabclient)?,
-            ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
+            ("checkout", Some(a)) => checkout::checkout_merge_request_cmd(a.clone(), config, *gitlabclient)?,
+            ("close", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Close, config, *gitlabclient)?,
+            ("create", Some(a)) => create::create_merge_request_cmd(a.clone(), config, *gitlabclient)?,
+            ("list", Some(a)) => list::list_mrs_cmd(a.clone(), config, *gitlabclient)?,
             ("lock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Lock, config, *gitlabclient)?,
+            // ("merge", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Merge, config, *gitlabclient)?,
+            ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
+            ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
+            // ("rebase", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Rebase, config, *gitlabclient)?,
+            ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
+            // ("unapprove", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unapprove, config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
             ("wip", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Wip, config, *gitlabclient)?,
             _ => unreachable!(),
