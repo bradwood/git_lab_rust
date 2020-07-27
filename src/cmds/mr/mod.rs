@@ -5,6 +5,7 @@ mod list;
 mod merge;
 mod open;
 mod quick_edit;
+mod rebase;
 mod show;
 mod unapprove;
 
@@ -567,6 +568,11 @@ NB: The current implementation requires that the GitLab-hosted git remote is cal
                             .takes_value(true)
                             .validator(validator::check_u64)
                     )
+                    .arg(
+                        clap::Arg::with_name("skip_ci")
+                            .short("S")
+                            .help("Skip CI on rebase")
+                    )
             )
             .subcommand(
                 clap::SubCommand::with_name("merge")
@@ -809,7 +815,7 @@ try `xdg-open(1)`.",
             ("merge", Some(a)) => merge::merge_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("open", Some(a)) => open::open_merge_request_cmd(a.clone(), config, *gitlabclient)?,
             ("reopen", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Reopen, config, *gitlabclient)?,
-            // ("rebase", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Rebase, config, *gitlabclient)?,
+            ("rebase", Some(a)) => rebase::rebase_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("show", Some(a)) => show::show_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("unapprove", Some(a)) => unapprove::unapprove_mr_cmd(a.clone(), config, *gitlabclient)?,
             ("unlock", Some(a)) => quick_edit::quick_edit_mr_cmd(a.clone(), ShortCmd::Unlock, config, *gitlabclient)?,
