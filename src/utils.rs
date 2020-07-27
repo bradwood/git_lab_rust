@@ -9,16 +9,6 @@ use serde_json::json;
 use crate::config;
 use crate::config::OutputFormat;
 
-#[derive(Debug)]
-pub enum ShortCmd {
-    Assign,
-    Close,
-    Reopen,
-    Lock,
-    Unlock,
-    Wip,
-}
-
 pub fn map_user_ids_from_names<'a>(members: &[String], v:Values<'a>) -> Result<Vec<u64>> {
     let mut member_map = members  // these look like ["1234:name", ...]
         .iter()

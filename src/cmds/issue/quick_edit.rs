@@ -4,7 +4,7 @@ use clap::value_t_or_exit;
 use crate::config;
 use crate::gitlab::{api, Client, EditIssue, Query, IssueStateEvent};
 use crate::utils;
-use crate::utils::ShortCmd;
+use crate::cmds::issue::ShortCmd;
 
 pub fn quick_edit_issue_cmd(
     args: clap::ArgMatches,
@@ -29,7 +29,6 @@ pub fn quick_edit_issue_cmd(
             let assign_ids = utils::map_user_ids_from_names(&config.members, args.values_of("usernames").unwrap())?;
             i.assignee_ids(assign_ids.into_iter())
         }
-        ShortCmd::Wip => unreachable!()
     };
 
     let endpoint = i

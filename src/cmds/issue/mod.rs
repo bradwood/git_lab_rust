@@ -16,7 +16,15 @@ use crate::gitlab;
 use crate::subcommand;
 use crate::utils::validator;
 use crate::utils;
-use crate::utils::ShortCmd;
+
+#[derive(Debug)]
+pub enum ShortCmd {
+    Assign,
+    Close,
+    Reopen,
+    Lock,
+    Unlock,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Issue {
