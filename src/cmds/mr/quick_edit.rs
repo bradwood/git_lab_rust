@@ -6,7 +6,7 @@ use crate::config;
 use crate::gitlab::{api, Client, EditMergeRequest, Query, MergeRequestStateEvent};
 use crate::gitlab::MergeRequest as GLMergeRequest;
 use crate::utils;
-use crate::utils::ShortCmd;
+use crate::cmds::mr::ShortCmd;
 
 fn strip_wip(s: String) -> String {
     for prefix in ["[WIP]","WIP:", "Draft:", "[Draft]", "(Draft)"].iter() {
@@ -15,7 +15,6 @@ fn strip_wip(s: String) -> String {
         }
     }
     s
-
 }
 
 pub fn quick_edit_mr_cmd(
